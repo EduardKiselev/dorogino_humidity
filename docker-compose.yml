@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: ${DB_NAME:-mydatabase}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -30,6 +32,7 @@ services:
     networks:
       - app_network
     environment:
+      - PYTHONUNBUFFERED=1
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-mydatabase}

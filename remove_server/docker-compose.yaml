@@ -30,6 +30,7 @@ services:
     networks:
       - app_network
     environment:
+      - PYTHONUNBUFFERED=1
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-sensor_data}

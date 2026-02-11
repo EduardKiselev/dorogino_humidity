@@ -66,6 +66,7 @@ def forward_data(data):
 @app.route('/data', methods=['POST'])
 def receive_data():
     """Приём данных от датчиков"""
+    
     try:
         data = request.get_json()
         timestamp = datetime.now()
@@ -103,7 +104,7 @@ def receive_data():
             session.close()
         
         # Пересылка в фоне
-        threading.Thread(target=forward_data, args=(data,), daemon=True).start()
+     #  threading.Thread(target=forward_data, args=(data,), daemon=True).start()
         
         return jsonify({
             "status": "ok",
