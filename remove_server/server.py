@@ -173,21 +173,6 @@ def get_data_by_sensor(sensor_id):
         print(f"❌ Ошибка: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Проверка работоспособности"""
-    try:
-        session = Session()
-        session.execute("SELECT 1")
-        session.close()
-        return jsonify({
-            "status": "healthy",
-            "db": f"{DB_HOST}:{DB_PORT}/{DB_NAME}",
-            "timestamp": datetime.now().isoformat()
-        }), 200
-    except Exception as e:
-        return jsonify({"status": "unhealthy", "error": str(e)}), 500
-
 @app.route('/stats', methods=['GET'])
 def stats():
     """Статистика по датчикам"""
