@@ -26,27 +26,6 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # Строка подключения к БД
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-def wait_for_db(max_retries=15, delay=2):
-    """Ожидание готовности БД перед запуском приложения"""
-    from sqlalchemy import create_engine
-    from sqlalchemy.exc import OperationalError
-    
-    engine = create_engine(DATABASE_URL)
-    for i in range(max_retries):
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            print(f"✅ База данных готова после {i+1} попыток")
-            engine.dispose()
-            return True
-        except OperationalError as e:
-            print(f"⏳ Ожидание БД ({i+1}/{max_retries})... {str(e)[:80]}")
-            time.sleep(delay)
-    raise Exception("❌ Не удалось подключиться к БД после нескольких попыток")
-
-# Ждём готовности БД
-wait_for_db()
-
 # Инициализация БД
 engine = create_engine(DATABASE_URL, pool_size=5, max_overflow=10)
 Base = declarative_base()
