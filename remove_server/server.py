@@ -1,7 +1,7 @@
 # server.py
 from flask import Flask, request, jsonify
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float
+from sqlalchemy import text,create_engine, Column, Integer, String, DateTime, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
 import time
@@ -35,7 +35,7 @@ def wait_for_db(max_retries=15, delay=2):
     for i in range(max_retries):
         try:
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))
             print(f"✅ База данных готова после {i+1} попыток")
             engine.dispose()
             return True
