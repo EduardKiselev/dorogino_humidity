@@ -83,36 +83,58 @@ def charts():
     """Страница графиков"""
     now = datetime.now(timezone.utc)
     
-    # За день
+    # Получаем все данные за разные периоды
     day_ago = now - timedelta(days=1)
-    day_data = SensorReading.query.filter(
+    month_ago = now - timedelta(days=30)
+    year_ago = now - timedelta(days=365)
+    
+    # Запросы для каждого периода
+    day_readings = SensorReading.query.filter(
         SensorReading.timestamp >= day_ago
     ).order_by(SensorReading.timestamp).all()
+    
+    month_readings = SensorReading.query.filter(
+        SensorReading.timestamp >= month_ago
+    ).order_by(SensorReading.timestamp).all()
+    
+    year_readings = SensorReading.query.filter(
+        SensorReading.timestamp >= year_ago
+    ).order_by(SensorReading.timestamp).all()
+    
+    # Преобразуем в словари
     day_data = [{
-    'id': r.id,
-    'sensor_id': r.sensor_id,
-    'value': float(r.value),  # убедитесь, что числа — примитивные типы
-    'timestamp': r.timestamp.isoformat() if r.timestamp else None,
-    'unit': r.unit  # добавьте остальные нужные поля
-    } for r in day_data]
+        'id': r.id,
+        'sensor_id': int(r.sensor_id),
+        'temperature': float(r.temperature),
+        'humidity': float(r.humidity),
+        'timestamp': r.timestamp.isoformat()
+    } for r in day_readings]
     
-    # # За месяц
-    # month_ago = now - timedelta(days=30)
-    # month_data = SensorReading.query.filter(
-    #     SensorReading.timestamp >= month_ago
-    # ).order_by(SensorReading.timestamp).all()
+    month_data = [{
+        'id': r.id,
+        'sensor_id': int(r.sensor_id),
+        'temperature': float(r.temperature),
+        'humidity': float(r.humidity),
+        'timestamp': r.timestamp.isoformat()
+    } for r in month_readings]
     
-    # # За год
-    # year_ago = now - timedelta(days=365)
-    # year_data = SensorReading.query.filter(
-    #     SensorReading.timestamp >= year_ago
-    # ).order_by(SensorReading.timestamp).all()
+    year_data = [{
+        'id': r.id,
+        'sensor_id': int(r.sensor_id),
+        'temperature': float(r.temperature),
+        'humidity': float(r.humidity),
+        'timestamp': r.timestamp.isoformat()
+    } for r in year_readings]
+    
+    # Получаем уникальные ID сенсоров
+    sensor_ids = sorted(list(set(r['sensor_id'] for r in day_data + month_data + year_data)))
     
     return render_template(
         'charts.html',
         day_data=day_data,
-     #   month_data=month_data,
-     #   year_data=year_data,
+        month_data=month_data,
+        year_data=year_data,
+        sensor_ids=sensor_ids,
         is_admin=session.get('is_admin')
     )
 

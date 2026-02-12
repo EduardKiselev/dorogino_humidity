@@ -1,4 +1,3 @@
-<!-- templates/charts.html -->
 {% extends "base.html" %}
 
 {% block title %}Графики{% endblock %}
@@ -6,28 +5,43 @@
 {% block content %}
 <h2>📈 Графики показаний</h2>
 
-<ul class="nav nav-tabs mb-3" role="tablist">
+<!-- Вкладки по сенсорам -->
+<ul class="nav nav-tabs mb-3" role="tablist" id="sensorTabs">
+    {% for sensor_id in sensor_ids %}
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#day">За день</button>
+        <button class="nav-link {% if loop.first %}active{% endif %}" 
+                data-bs-toggle="tab" 
+                data-bs-target="#sensor-{{ sensor_id }}">
+            Сенсор {{ sensor_id }}
+        </button>
     </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#month">За месяц</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#year">За год</button>
-    </li>
+    {% endfor %}
 </ul>
 
-<div class="tab-content">
-    <div class="tab-pane fade show active" id="day">
-        <canvas id="dayChart" height="100"></canvas>
+<div class="tab-content" id="sensorTabContent">
+    {% for sensor_id in sensor_ids %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="sensor-{{ sensor_id }}">
+        <div class="row">
+            <!-- За день -->
+            <div class="col-md-12 mb-3">
+                <h5>За день</h5>
+                <canvas id="chart-day-{{ sensor_id }}" height="100"></canvas>
+            </div>
+            
+            <!-- За месяц -->
+            <div class="col-md-12 mb-3">
+                <h5>За месяц</h5>
+                <canvas id="chart-month-{{ sensor_id }}" height="100"></canvas>
+            </div>
+            
+            <!-- За год -->
+            <div class="col-md-12 mb-3">
+                <h5>За год</h5>
+                <canvas id="chart-year-{{ sensor_id }}" height="100"></canvas>
+            </div>
+        </div>
     </div>
-    <div class="tab-pane fade" id="month">
-        <canvas id="monthChart" height="100"></canvas>
-    </div>
-    <div class="tab-pane fade" id="year">
-        <canvas id="yearChart" height="100"></canvas>
-    </div>
+    {% endfor %}
 </div>
 
 {% endblock %}
@@ -35,47 +49,95 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-function createChart(canvasId, data) {
+// Группируем данные по сенсорам
+function groupBySensor(data) {
+    const grouped = {};
+    data.forEach(item => {
+        if (!grouped[item.sensor_id]) {
+            grouped[item.sensor_id] = [];
+        }
+        grouped[item.sensor_id].push(item);
+    });
+    return grouped;
+}
+
+// Создаём график с двумя осями Y
+function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
     return new Chart(ctx, {
         type: 'line',
-         {
+        data: {
             labels: data.map(d => new Date(d.timestamp)),
-            datasets: [{
-                label: 'Влажность (%)',
-                data: data.map(d => d.humidity),
-                borderColor: 'rgb(54, 162, 235)',
-                backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                tension: 0.3,
-                fill: true
-            }]
+            datasets: [
+                {
+                    label: 'Температура (°C)',
+                    data: data.map(d => d.temperature),
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.3,
+                    yAxisID: 'yTemp'
+                },
+                {
+                    label: 'Влажность (%)',
+                    data: data.map(d => d.humidity),
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.3,
+                    yAxisID: 'yHum'
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    min: 0,
-                    max: 100,
-                    title: { display: true, text: 'Влажность (%)' }
-                },
                 x: {
                     type: 'time',
-                    time: { unit: 'hour' },
+                    time: { unit: timeUnit },
                     title: { display: true, text: 'Время' }
+                },
+                yTemp: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Температура (°C)' },
+                    grid: { drawOnChartArea: false }
+                },
+                yHum: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Влажность (%)' },
+                    grid: { drawOnChartArea: false },
+                    min: 0,
+                    max: 100
                 }
             }
         }
     });
 }
 
-const dayData = {{ day_data|tojson }};
-const monthData = {{ month_data|tojson }};
-const yearData = {{ year_data|tojson }};
+// Группируем данные по сенсорам
+const dayDataBySensor = groupBySensor({{ day_data|tojson }});
+const monthDataBySensor = groupBySensor({{ month_data|tojson }});
+const yearDataBySensor = groupBySensor({{ year_data|tojson }});
 
-if (dayData.length > 0) createChart('dayChart', dayData);
-if (monthData.length > 0) createChart('monthChart', monthData);
-if (yearData.length > 0) createChart('yearChart', yearData);
+// Создаём графики для каждого сенсора
+{% for sensor_id in sensor_ids %}
+    const sensorId = {{ sensor_id }};
+    
+    if (dayDataBySensor[sensorId] && dayDataBySensor[sensorId].length > 0) {
+        createDualAxisChart('chart-day-' + sensorId, dayDataBySensor[sensorId], 'hour');
+    }
+    
+    if (monthDataBySensor[sensorId] && monthDataBySensor[sensorId].length > 0) {
+        createDualAxisChart('chart-month-' + sensorId, monthDataBySensor[sensorId], 'day');
+    }
+    
+    if (yearDataBySensor[sensorId] && yearDataBySensor[sensorId].length > 0) {
+        createDualAxisChart('chart-year-' + sensorId, yearDataBySensor[sensorId], 'month');
+    }
+{% endfor %}
 </script>
 {% endblock %}
