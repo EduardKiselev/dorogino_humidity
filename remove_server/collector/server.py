@@ -1,6 +1,6 @@
 # server.py
 from flask import Flask, request, jsonify
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import text,create_engine, Column, Integer, String, DateTime, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
@@ -49,8 +49,9 @@ Session = sessionmaker(bind=engine)
 def receive_data():
     """Приём данных от датчиков"""
     try:
+        nsk_tz = timezone(timedelta(hours=7))
         data = request.get_json()
-        timestamp = datetime.now() + datetime.timedelta(hours=3)
+        timestamp = datetime.now(nsk_tz)
         ip_address = request.remote_addr
         
         print(f"📡 [{timestamp}] {ip_address} -> {data}")
