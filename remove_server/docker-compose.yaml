@@ -28,7 +28,7 @@ services:
       - "5000:5000"
     depends_on:
       db:
-        condition: service_healthy
+        #condition: service_healthy
     networks:
       - app_network
     environment:
