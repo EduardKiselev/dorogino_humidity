@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from config import Config
-from models import db, SensorReading, SystemSettings
+from models import db, SensorReading, Setting, SettingChangeLog
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 
@@ -22,6 +22,17 @@ def admin_required(f):
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
+
+def log_setting_change(sensor_id, humidity, histeresys_up, histeresys_down):
+    """Записывает изменение настроек в лог"""
+    log_entry = SettingChangeLog(
+        sensor_id=sensor_id,
+        humidity=humidity,
+        histeresys_up=histeresys_up,
+        histeresys_down=histeresys_down,
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.session.add(log_entry)
 
 # === Роуты ===
 
@@ -70,7 +81,7 @@ def index():
 @app.route('/charts')
 def charts():
     """Страница графиков"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     # За день
     day_ago = now - timedelta(days=1)
@@ -101,28 +112,69 @@ def charts():
 @app.route('/settings', methods=['GET', 'POST'])
 @admin_required
 def settings():
-    """Страница настроек (только для админа)"""
-    settings = SystemSettings.get_current()
+    """Страница настроек (только для админа) - теперь для 5 датчиков"""
+    # Получаем настройки для всех 5 датчиков
+    sensor_settings = {}
+    for sensor_id in range(1, 6):
+        setting = Setting.query.filter_by(sensor_id=sensor_id).order_by(Setting.timestamp.desc()).first()
+        if not setting:
+            # Создаем настройки по умолчанию для датчика
+            setting = Setting(
+                sensor_id=sensor_id,
+                humidity=60.0,
+                histeresys_up=5.0,
+                histeresys_down=5.0
+            )
+            db.session.add(setting)
+            db.session.commit()
+        sensor_settings[sensor_id] = setting
     
     if request.method == 'POST':
         try:
-            humidity_threshold = float(request.form.get('humidity_threshold'))
-            hysteresis = float(request.form.get('hysteresis'))
+            for sensor_id in range(1, 6):
+                # Получаем значения из формы для каждого датчика
+                humidity = float(request.form.get(f'humidity_sensor_{sensor_id}'))
+                histeresys_up = float(request.form.get(f'histeresys_up_sensor_{sensor_id}'))
+                histeresys_down = float(request.form.get(f'histeresys_down_sensor_{sensor_id}'))
+                
+                if not (0 <= humidity <= 100):
+                    raise ValueError(f'Порог влажности для датчика {sensor_id} должен быть от 0 до 100%')
+                if not (0 <= histeresys_up <= 20):
+                    raise ValueError(f'Верхний гистерезис для датчика {sensor_id} должен быть от 0 до 20%')
+                if not (0 <= histeresys_down <= 20):
+                    raise ValueError(f'Нижний гистерезис для датчика {sensor_id} должен быть от 0 до 20%')
+                
+                # Получаем текущую настройку датчика для логирования
+                current_setting = Setting.query.filter_by(sensor_id=sensor_id).order_by(Setting.timestamp.desc()).first()
+                
+                # Логируем изменения, если они есть
+                if current_setting:
+                    if (current_setting.humidity != humidity or 
+                        current_setting.histeresys_up != histeresys_up or 
+                        current_setting.histeresys_down != histeresys_down):
+                        log_setting_change(
+                            sensor_id, 
+                            humidity, 
+                            histeresys_up, 
+                            histeresys_down
+                        )
+                
+                # Создаем новую запись с настройками датчика
+                new_setting = Setting(
+                    sensor_id=sensor_id,
+                    humidity=humidity,
+                    histeresys_up=histeresys_up,
+                    histeresys_down=histeresys_down
+                )
+                db.session.add(new_setting)
             
-            if not (0 <= humidity_threshold <= 100):
-                raise ValueError('Порог влажности должен быть от 0 до 100%')
-            if not (0 <= hysteresis <= 20):
-                raise ValueError('Гистерезис должен быть от 0 до 20%')
-            
-            settings.humidity_threshold = humidity_threshold
-            settings.hysteresis = hysteresis
             db.session.commit()
-            
-            flash('Настройки успешно сохранены!', 'success')
+            flash('Настройки для всех датчиков успешно сохранены!', 'success')
         except (ValueError, TypeError) as e:
+            db.session.rollback()
             flash(f'Ошибка: {str(e)}', 'danger')
     
-    return render_template('settings.html', settings=settings)
+    return render_template('settings.html', sensor_settings=sensor_settings)
 
 @app.route('/api/readings/latest')
 def api_latest_readings():
@@ -139,4 +191,16 @@ def api_latest_readings():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        # Инициализация настроек для 5 датчиков, если их нет
+        for sensor_id in range(1, 6):
+            existing = Setting.query.filter_by(sensor_id=sensor_id).first()
+            if not existing:
+                default_setting = Setting(
+                    sensor_id=sensor_id,
+                    humidity=60.0,
+                    histeresys_up=5.0,
+                    histeresys_down=5.0
+                )
+                db.session.add(default_setting)
+        db.session.commit()
     app.run(host='0.0.0.0', port=5000, debug=True)

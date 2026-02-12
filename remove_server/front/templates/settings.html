@@ -4,39 +4,54 @@
 {% block title %}Настройки{% endblock %}
 
 {% block content %}
-<h2>⚙️ Настройки системы управления влажностью</h2>
+<h2>⚙️ Настройки системы управления влажностью (5 датчиков)</h2>
 
 <div class="card">
     <div class="card-body">
         <form method="post">
-            <div class="mb-3">
-                <label class="form-label"><strong>Порог влажности (%)</strong></label>
-                <input type="number" class="form-control" name="humidity_threshold" 
-                       value="{{ "%.1f"|format(settings.humidity_threshold) }}" 
-                       min="0" max="100" step="0.1" required>
-                <div class="form-text">
-                    При превышении этого значения увлажнитель будет отключаться
+            {% for sensor_id in range(1, 6) %}
+            <div class="mb-4 border-bottom pb-3">
+                <h4>Датчик {{ sensor_id }}</h4>
+                
+                <div class="mb-3">
+                    <label class="form-label"><strong>Порог влажности (%)</strong></label>
+                    <input type="number" class="form-control" name="humidity_sensor_{{ sensor_id }}" 
+                           value="{{ "%.1f"|format(sensor_settings[sensor_id].humidity) }}" 
+                           min="0" max="100" step="0.1" required>
+                    <div class="form-text">
+                        При превышении этого значения увлажнитель будет отключаться
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Верхний гистерезис (%)</strong></label>
+                    <input type="number" class="form-control" name="histeresys_up_sensor_{{ sensor_id }}" 
+                           value="{{ "%.1f"|format(sensor_settings[sensor_id].histeresys_up) }}" 
+                           min="0" max="20" step="0.1" required>
+                    <div class="form-text">
+                        Разница между включением и выключением сверху
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Нижний гистерезис (%)</strong></label>
+                    <input type="number" class="form-control" name="histeresys_down_sensor_{{ sensor_id }}" 
+                           value="{{ "%.1f"|format(sensor_settings[sensor_id].histeresys_down) }}" 
+                           min="0" max="20" step="0.1" required>
+                    <div class="form-text">
+                        Разница между включением и выключением снизу
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Текущие значения для датчика {{ sensor_id }}:</strong><br>
+                    Включение: <strong>{{ "%.1f"|format(sensor_settings[sensor_id].humidity - sensor_settings[sensor_id].histeresys_down) }}%</strong><br>
+                    Выключение: <strong>{{ "%.1f"|format(sensor_settings[sensor_id].humidity + sensor_settings[sensor_id].histeresys_up) }}%</strong>
                 </div>
             </div>
+            {% endfor %}
 
-            <div class="mb-3">
-                <label class="form-label"><strong>Гистерезис (%)</strong></label>
-                <input type="number" class="form-control" name="hysteresis" 
-                       value="{{ "%.1f"|format(settings.hysteresis) }}" 
-                       min="0" max="20" step="0.1" required>
-                <div class="form-text">
-                    Разница между включением и выключением. Например, при пороге 60% и гистерезисе 5%:
-                    включение при 55%, выключение при 60%
-                </div>
-            </div>
-
-            <div class="alert alert-info">
-                <strong>Текущие значения:</strong><br>
-                Включение: <strong>{{ "%.1f"|format(settings.humidity_threshold - settings.hysteresis) }}%</strong><br>
-                Выключение: <strong>{{ "%.1f"|format(settings.humidity_threshold) }}%</strong>
-            </div>
-
-            <button type="submit" class="btn btn-success">Сохранить настройки</button>
+            <button type="submit" class="btn btn-success">Сохранить настройки для всех датчиков</button>
         </form>
     </div>
 </div>

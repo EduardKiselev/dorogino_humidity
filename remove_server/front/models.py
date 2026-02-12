@@ -27,49 +27,44 @@ class SensorReading(db.Model):
             'ip_address': self.ip_address
         }
 
-class ZoneSetting(db.Model):
-    """Настройки для каждой зоны"""
-    __tablename__ = 'zone_settings'
+class Setting(db.Model):
+    """Таблица с настройками для каждого датчика"""
+    __tablename__ = 'settings'
     
     id = db.Column(db.Integer, primary_key=True)
-    zone_id = db.Column(db.Integer, nullable=False)  # ID зоны (1-5)
-    humidity_threshold = db.Column(db.Float, nullable=False)  # порог влажности
-    hysteresis = db.Column(db.Float, nullable=False)          # гистерезис
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (1-5)
+    humidity = db.Column(db.Float)  # порог влажности
+    histeresys_up = db.Column(db.Float)  # верхний гистерезис
+    histeresys_down = db.Column(db.Float)  # нижний гистерезис
     
-    def __repr__(self):
-        return f'<ZoneSetting zone={self.zone_id} threshold={self.humidity_threshold}>'
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'timestamp': self.timestamp.isoformat(),
+            'sensor_id': self.sensor_id,
+            'humidity': self.humidity,
+            'histeresys_up': self.histeresys_up,
+            'histeresys_down': self.histeresys_down
+        }
 
 class SettingChangeLog(db.Model):
     """Лог изменений настроек"""
-    __tablename__ = 'setting_change_log'
+    __tablename__ = 'settings_logs'
     
     id = db.Column(db.Integer, primary_key=True)
-    zone_id = db.Column(db.Integer, nullable=False)  # ID зоны (если применимо)
-    parameter_name = db.Column(db.String(100), nullable=False)  # имя параметра
-    old_value = db.Column(db.Float)  # старое значение
-    new_value = db.Column(db.Float)  # новое значение
-    changed_at = db.Column(db.DateTime, default=datetime.utcnow)  # время изменения
-    changed_by = db.Column(db.String(100))  # кто изменил (если есть авторизация)
-
-class SystemSettings(db.Model):
-    """Настройки системы управления влажностью (устаревшее, для совместимости)"""
-    __tablename__ = 'system_settings'
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (если применимо)
+    humidity = db.Column(db.Float)  # значение влажности
+    histeresys_up = db.Column(db.Float)  # верхний гистерезис
+    histeresys_down = db.Column(db.Float)  # нижний гистерезис
     
-    id = db.Column(db.Integer, primary_key=True)
-    humidity_threshold = db.Column(db.Float, nullable=False)  # порог влажности
-    hysteresis = db.Column(db.Float, nullable=False)          # гистерезис
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @classmethod
-    def get_current(cls):
-        """Получить текущие настройки или создать дефолтные"""
-        settings = cls.query.first()
-        if not settings:
-            settings = cls(
-                humidity_threshold=60.0,
-                hysteresis=5.0
-            )
-            db.session.add(settings)
-            db.session.commit()
-        return settings
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'timestamp': self.timestamp.isoformat(),
+            'sensor_id': self.sensor_id,
+            'humidity': self.humidity,
+            'histeresys_up': self.histeresys_up,
+            'histeresys_down': self.histeresys_down
+        }
