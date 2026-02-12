@@ -50,7 +50,7 @@ def receive_data():
     """Приём данных от датчиков"""
     try:
         data = request.get_json()
-        timestamp = datetime.now()
+        timestamp = datetime.now() + datetime.timedelta(hours=3)
         ip_address = request.remote_addr
         
         print(f"📡 [{timestamp}] {ip_address} -> {data}")

@@ -68,9 +68,8 @@ def index():
     # Convert to local timezone if needed
     for reading in readings:
         if reading.timestamp.tzinfo is None:
-            reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
+            reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc+3)
     
-    readings.reverse()  # от старых к новым
     
     return render_template(
         'index.html', 
@@ -125,6 +124,8 @@ def charts():
         'humidity': float(r.humidity),
         'timestamp': r.timestamp.isoformat()
     } for r in year_readings]
+
+    print('day_data', day_data)
     
     # Получаем уникальные ID сенсоров
     sensor_ids = sorted(list(set(r['sensor_id'] for r in day_data + month_data + year_data)))
