@@ -54,7 +54,7 @@ def receive_data():
         timestamp = datetime.now(nsk_tz)
         ip_address = request.remote_addr
         
-        print(f"📡 [{timestamp}] {ip_address} -> {data}")
+        print(f"REMOTE SERVER COLLECTOR: [{timestamp}] {ip_address} -> {data}")
         
         # Валидация данных
         if not isinstance(data, dict):
