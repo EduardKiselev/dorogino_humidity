@@ -104,7 +104,8 @@ def receive_data():
             session.close()
         
         # Пересылка в фоне
-     #  threading.Thread(target=forward_data, args=(data,), daemon=True).start()
+        # threading.Thread(target=forward_data, args=(data,), daemon=True).start()
+        forward_data(data)
         
         return jsonify({
             "status": "ok",

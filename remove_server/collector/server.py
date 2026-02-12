@@ -173,12 +173,23 @@ def get_data_by_sensor(sensor_id):
         print(f"❌ Ошибка: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    try:
+        session = Session()
+        session.execute(text("SELECT 1"))
+        session.close()
+        return jsonify({"status": "healthy", "database": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
+
 @app.route('/stats', methods=['GET'])
 def stats():
     """Статистика по датчикам"""
     try:
         session = Session()
-        result = session.execute("""
+        result = session.execute(text("""
             SELECT 
                 sensor_id,
                 COUNT(*) as readings_count,
@@ -189,7 +200,7 @@ def stats():
             FROM sensor_readings
             GROUP BY sensor_id
             ORDER BY sensor_id
-        """)
+        """))
         
         stats_data = []
         for row in result:

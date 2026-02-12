@@ -1,0 +1,81 @@
+<!-- templates/charts.html -->
+{% extends "base.html" %}
+
+{% block title %}Графики{% endblock %}
+
+{% block content %}
+<h2>📈 Графики показаний</h2>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#day">За день</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#month">За месяц</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#year">За год</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="day">
+        <canvas id="dayChart" height="100"></canvas>
+    </div>
+    <div class="tab-pane fade" id="month">
+        <canvas id="monthChart" height="100"></canvas>
+    </div>
+    <div class="tab-pane fade" id="year">
+        <canvas id="yearChart" height="100"></canvas>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+function createChart(canvasId, data) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    return new Chart(ctx, {
+        type: 'line',
+         {
+            labels: data.map(d => new Date(d.timestamp)),
+            datasets: [{
+                label: 'Влажность (%)',
+                data: data.map(d => d.humidity),
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100,
+                    title: { display: true, text: 'Влажность (%)' }
+                },
+                x: {
+                    type: 'time',
+                    time: { unit: 'hour' },
+                    title: { display: true, text: 'Время' }
+                }
+            }
+        }
+    });
+}
+
+const dayData = {{ day_data|tojson }};
+const monthData = {{ month_data|tojson }};
+const yearData = {{ year_data|tojson }};
+
+if (dayData.length > 0) createChart('dayChart', dayData);
+if (monthData.length > 0) createChart('monthChart', monthData);
+if (yearData.length > 0) createChart('yearChart', yearData);
+</script>
+{% endblock %}
