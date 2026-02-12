@@ -88,24 +88,31 @@ def charts():
     day_data = SensorReading.query.filter(
         SensorReading.timestamp >= day_ago
     ).order_by(SensorReading.timestamp).all()
+    day_data = [{
+    'id': r.id,
+    'sensor_id': r.sensor_id,
+    'value': float(r.value),  # убедитесь, что числа — примитивные типы
+    'timestamp': r.timestamp.isoformat() if r.timestamp else None,
+    'unit': r.unit  # добавьте остальные нужные поля
+    } for r in day_data]
     
-    # За месяц
-    month_ago = now - timedelta(days=30)
-    month_data = SensorReading.query.filter(
-        SensorReading.timestamp >= month_ago
-    ).order_by(SensorReading.timestamp).all()
+    # # За месяц
+    # month_ago = now - timedelta(days=30)
+    # month_data = SensorReading.query.filter(
+    #     SensorReading.timestamp >= month_ago
+    # ).order_by(SensorReading.timestamp).all()
     
-    # За год
-    year_ago = now - timedelta(days=365)
-    year_data = SensorReading.query.filter(
-        SensorReading.timestamp >= year_ago
-    ).order_by(SensorReading.timestamp).all()
+    # # За год
+    # year_ago = now - timedelta(days=365)
+    # year_data = SensorReading.query.filter(
+    #     SensorReading.timestamp >= year_ago
+    # ).order_by(SensorReading.timestamp).all()
     
     return render_template(
         'charts.html',
         day_data=day_data,
-        month_data=month_data,
-        year_data=year_data,
+     #   month_data=month_data,
+     #   year_data=year_data,
         is_admin=session.get('is_admin')
     )
 
