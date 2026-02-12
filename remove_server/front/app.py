@@ -68,7 +68,7 @@ def index():
     # Convert to local timezone if needed
     for reading in readings:
         if reading.timestamp.tzinfo is None:
-            reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc+3)
+            reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
     
     
     return render_template(
