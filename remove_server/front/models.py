@@ -27,8 +27,33 @@ class SensorReading(db.Model):
             'ip_address': self.ip_address
         }
 
+class ZoneSetting(db.Model):
+    """Настройки для каждой зоны"""
+    __tablename__ = 'zone_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.Integer, nullable=False)  # ID зоны (1-5)
+    humidity_threshold = db.Column(db.Float, nullable=False)  # порог влажности
+    hysteresis = db.Column(db.Float, nullable=False)          # гистерезис
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ZoneSetting zone={self.zone_id} threshold={self.humidity_threshold}>'
+
+class SettingChangeLog(db.Model):
+    """Лог изменений настроек"""
+    __tablename__ = 'setting_change_log'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.Integer, nullable=False)  # ID зоны (если применимо)
+    parameter_name = db.Column(db.String(100), nullable=False)  # имя параметра
+    old_value = db.Column(db.Float)  # старое значение
+    new_value = db.Column(db.Float)  # новое значение
+    changed_at = db.Column(db.DateTime, default=datetime.utcnow)  # время изменения
+    changed_by = db.Column(db.String(100))  # кто изменил (если есть авторизация)
+
 class SystemSettings(db.Model):
-    """Настройки системы управления влажностью"""
+    """Настройки системы управления влажностью (устаревшее, для совместимости)"""
     __tablename__ = 'system_settings'
     
     id = db.Column(db.Integer, primary_key=True)
