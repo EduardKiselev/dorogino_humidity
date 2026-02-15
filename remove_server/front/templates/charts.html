@@ -69,11 +69,10 @@ const charts = {};
 // Группируем данные по сенсорам
 function groupBySensor(data) {
     const grouped = {};
-    data.forEach(item => {
-        if (!grouped[item.sensor_id]) {
-            grouped[item.sensor_id] = [];
-        }
-        grouped[item.sensor_id].push(item);
+    // Initialize all possible sensor IDs to ensure they exist in the grouping
+    const allSensorIds = [...new Set(data.map(item => item.sensor_id))];
+    allSensorIds.forEach(id => {
+        grouped[id] = data.filter(item => item.sensor_id === id);
     });
     return grouped;
 }
