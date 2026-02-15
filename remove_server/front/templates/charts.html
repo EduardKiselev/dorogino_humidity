@@ -70,6 +70,7 @@ const charts = {};
 function groupBySensor(data) {
     const grouped = {};
     data.forEach(item => {
+        const sensorId = String(item.sensor_id);
         if (!grouped[item.sensor_id]) {
             grouped[item.sensor_id] = [];
         }
