@@ -127,7 +127,7 @@ def charts():
         'timestamp': r.timestamp.isoformat()
     } for r in year_readings]
 
-    print('day_data', day_data)
+    print('day_data', day_data[1:10])
     
     # Получаем уникальные ID сенсоров
     sensor_ids = sorted(list(set(r['sensor_id'] for r in day_data + month_data + year_data)))
