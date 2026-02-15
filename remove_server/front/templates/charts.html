@@ -71,10 +71,10 @@ function groupBySensor(data) {
     const grouped = {};
     data.forEach(item => {
         const sensorId = String(item.sensor_id);
-        if (!grouped[item.sensor_id]) {
-            grouped[item.sensor_id] = [];
+        if (!grouped[sensorId]) {
+            grouped[sensorId] = [];
         }
-        grouped[item.sensor_id].push(item);
+        grouped[sensorId].push(item);
     });
     return grouped;
 }
