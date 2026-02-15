@@ -25,19 +25,25 @@
             <!-- За день -->
             <div class="col-md-12 mb-3">
                 <h5>За день</h5>
-                <canvas id="chart-day-{{ sensor_id }}" height="80"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-day-{{ sensor_id }}"></canvas>
+                </div>
             </div>
             
             <!-- За месяц -->
             <div class="col-md-12 mb-3">
                 <h5>За месяц</h5>
-                <canvas id="chart-month-{{ sensor_id }}" height="80"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-month-{{ sensor_id }}"></canvas>
+                </div>
             </div>
             
             <!-- За год -->
             <div class="col-md-12 mb-3">
                 <h5>За год</h5>
-                <canvas id="chart-year-{{ sensor_id }}" height="80"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-year-{{ sensor_id }}"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -128,6 +134,7 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                 ]
             },
             options: {
+                animation: false,  // ← Отключаем анимацию
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
@@ -174,10 +181,9 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         },
                         ticks: {
                             color: 'rgb(255, 99, 132)',
-                            // Ограничения для температуры: от -10 до +45
-                            min: 20,
-                            max: 45,
-                            stepSize: 5
+                            // Ограничения для температуры
+                            suggestedMin: -5,
+                            suggestedMax: 40
                         }
                     },
                     yHum: {
@@ -255,14 +261,14 @@ const yearDataBySensor = groupBySensor({{ year_data|tojson }});
     }
 {% endfor %}
 
-// Перерисовка графиков при переключении вкладок
+// ПЕРЕРИСОВКА ПРИ ПЕРЕКЛЮЧЕНИИ ВКЛАДОК (ЗАКОММЕНТИРОВАНА)
+/*
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', (event) => {
             const targetId = event.target.getAttribute('data-bs-target');
             const sensorId = targetId.replace('#sensor-', '');
             
-            // Перерисовываем все графики на вкладке
             ['day', 'month', 'year'].forEach(period => {
                 const chartKey = `chart-${period}-${sensorId}`;
                 if (charts[chartKey]) {
@@ -272,8 +278,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
-    
-    console.log('📊 Всего графиков создано:', Object.keys(charts).length);
 });
+*/
+
+console.log('📊 Всего графиков создано:', Object.keys(charts).length);
 </script>
 {% endblock %}
