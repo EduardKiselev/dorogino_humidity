@@ -69,8 +69,9 @@ def index():
     for reading in readings:
         if reading.timestamp.tzinfo is None:
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
-    
-    print(readings)
+        print(reading.sensor_id, reading.timestamp,reading.humidity, reading.temperature)
+
+
     
     return render_template(
         'index.html', 
