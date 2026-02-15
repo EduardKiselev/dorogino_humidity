@@ -1,3 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Графики{% endblock %}
+
+{% block content %}
+<h2>📈 Графики показаний</h2>
+
+<!-- Вкладки по сенсорам -->
+<ul class="nav nav-tabs mb-3" role="tablist" id="sensorTabs">
+    {% for sensor_id in sensor_ids %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if loop.first %}active{% endif %}" 
+                data-bs-toggle="tab" 
+                data-bs-target="#sensor-{{ sensor_id }}">
+            Сенсор {{ sensor_id }}
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+
+<div class="tab-content" id="sensorTabContent">
+    {% for sensor_id in sensor_ids %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="sensor-{{ sensor_id }}">
+        <div class="row">
+            <!-- За день -->
+            <div class="col-md-12 mb-3">
+                <h5>За день</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-day-{{ sensor_id }}"></canvas>
+                </div>
+            </div>
+            
+            <!-- За месяц -->
+            <div class="col-md-12 mb-3">
+                <h5>За месяц</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-month-{{ sensor_id }}"></canvas>
+                </div>
+            </div>
+            
+            <!-- За год -->
+            <div class="col-md-12 mb-3">
+                <h5>За год</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-year-{{ sensor_id }}"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<!-- Правильный порядок подключения: сначала Chart.js, потом адаптеры -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
 <script>
 // Отладка: проверяем загрузку библиотек
 console.log('✅ Chart.js загружен:', typeof Chart !== 'undefined');
@@ -162,23 +223,6 @@ const dayDataBySensor = groupBySensor({{ day_data|tojson }});
 const monthDataBySensor = groupBySensor({{ month_data|tojson }});
 const yearDataBySensor = groupBySensor({{ year_data|tojson }});
 
-// Добавляем отладочный вывод для проверки группировки данных
-console.log("🔍 Проверка группировки данных по сенсорам:");
-console.log("📊 Данные за день по сенсорам:", dayDataBySensor);
-console.log("📊 Данные за месяц по сенсорам:", monthDataBySensor);
-console.log("📊 Данные за год по сенсорам:", yearDataBySensor);
-
-// Проверяем количество записей для каждого сенсора
-Object.keys(dayDataBySensor).forEach(sensorId => {
-    console.log(`📊 Сенсор ${sensorId}: ${dayDataBySensor[sensorId].length} записей за день`);
-});
-Object.keys(monthDataBySensor).forEach(sensorId => {
-    console.log(`📊 Сенсор ${sensorId}: ${monthDataBySensor[sensorId].length} записей за месяц`);
-});
-Object.keys(yearDataBySensor).forEach(sensorId => {
-    console.log(`📊 Сенсор ${sensorId}: ${yearDataBySensor[sensorId].length} записей за год`);
-});
-
 // Создаём графики для каждого сенсора
 {% for sensor_id in sensor_ids %}
     const sensorId = {{ sensor_id }};
@@ -217,5 +261,26 @@ Object.keys(yearDataBySensor).forEach(sensorId => {
     }
 {% endfor %}
 
+// ПЕРЕРИСОВКА ПРИ ПЕРЕКЛЮЧЕНИИ ВКЛАДОК (ЗАКОММЕНТИРОВАНА)
+/*
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', (event) => {
+            const targetId = event.target.getAttribute('data-bs-target');
+            const sensorId = targetId.replace('#sensor-', '');
+            
+            ['day', 'month', 'year'].forEach(period => {
+                const chartKey = `chart-${period}-${sensorId}`;
+                if (charts[chartKey]) {
+                    charts[chartKey].resize();
+                    charts[chartKey].update();
+                }
+            });
+        });
+    });
+});
+*/
 
 console.log('📊 Всего графиков создано:', Object.keys(charts).length);
+</script>
+{% endblock %}
