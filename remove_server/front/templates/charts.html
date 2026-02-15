@@ -25,19 +25,19 @@
             <!-- За день -->
             <div class="col-md-12 mb-3">
                 <h5>За день</h5>
-                <canvas id="chart-day-{{ sensor_id }}" height="100"></canvas>
+                <canvas id="chart-day-{{ sensor_id }}" height="80"></canvas>
             </div>
             
             <!-- За месяц -->
             <div class="col-md-12 mb-3">
                 <h5>За месяц</h5>
-                <canvas id="chart-month-{{ sensor_id }}" height="100"></canvas>
+                <canvas id="chart-month-{{ sensor_id }}" height="80"></canvas>
             </div>
             
             <!-- За год -->
             <div class="col-md-12 mb-3">
                 <h5>За год</h5>
-                <canvas id="chart-year-{{ sensor_id }}" height="100"></canvas>
+                <canvas id="chart-year-{{ sensor_id }}" height="80"></canvas>
             </div>
         </div>
     </div>
@@ -56,7 +56,6 @@
 <script>
 // Отладка: проверяем загрузку библиотек
 console.log('✅ Chart.js загружен:', typeof Chart !== 'undefined');
-console.log('✅ date-fns загружен:', typeof dateFns !== 'undefined');
 
 // Храним все графики для перерисовки
 const charts = {};
@@ -109,6 +108,9 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         data: data.map(d => d.temperature),
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
                         tension: 0.3,
                         yAxisID: 'yTemp'
                     },
@@ -117,6 +119,9 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         data: data.map(d => d.humidity),
                         borderColor: 'rgb(54, 162, 235)',
                         backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
                         tension: 0.3,
                         yAxisID: 'yHum'
                     }
@@ -150,7 +155,10 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                             text: 'Время' 
                         },
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
                         }
                     },
                     yTemp: {
@@ -165,7 +173,11 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                             drawOnChartArea: false 
                         },
                         ticks: {
-                            color: 'rgb(255, 99, 132)'
+                            color: 'rgb(255, 99, 132)',
+                            // Ограничения для температуры: от -10 до +45
+                            min: 20,
+                            max: 45,
+                            stepSize: 5
                         }
                     },
                     yHum: {
@@ -179,10 +191,12 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         grid: { 
                             drawOnChartArea: false 
                         },
-                        min: 0,
-                        max: 100,
                         ticks: {
-                            color: 'rgb(54, 162, 235)'
+                            color: 'rgb(54, 162, 235)',
+                            // Влажность: от 0 до 100%
+                            min: 0,
+                            max: 100,
+                            stepSize: 10
                         }
                     }
                 }
@@ -254,7 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (charts[chartKey]) {
                     charts[chartKey].resize();
                     charts[chartKey].update();
-                    console.log(`🔄 Перерисован график: ${chartKey}`);
                 }
             });
         });
@@ -262,11 +275,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('📊 Всего графиков создано:', Object.keys(charts).length);
 });
-
-// Отладка данных (можно удалить после проверки)
-console.log('📊 Данные за день:', {{ day_data|tojson }});
-console.log('📊 Данные за месяц:', {{ month_data|tojson }});
-console.log('📊 Данные за год:', {{ year_data|tojson }});
-console.log('🆔 Сенсоры:', {{ sensor_ids|tojson }});
 </script>
 {% endblock %}
