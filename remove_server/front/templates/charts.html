@@ -66,6 +66,11 @@ function groupBySensor(data) {
 
 // Создаём график с двумя осями Y
 function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        console.error(`Canvas не найден: ${canvasId}`);
+        return null;
+    }
     const ctx = document.getElementById(canvasId).getContext('2d');
     
     return new Chart(ctx, {
