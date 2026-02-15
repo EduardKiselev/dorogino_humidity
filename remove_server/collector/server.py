@@ -52,9 +52,9 @@ def receive_data():
         nsk_tz = timezone(timedelta(hours=7))
         data = request.get_json()
         timestamp = datetime.now(nsk_tz)
-        ip_address = request.remote_addr
+        ip_address = data.get('ip_address')
         
-        print(f"REMOTE SERVER COLLECTOR: [{timestamp}] {ip_address} -> {data}")
+        print(f"REMOTE SERVER COLLECTOR: [{timestamp}] from sensor ip {ip_address} -> {data}")
         
         # Валидация данных
         if not isinstance(data, dict):

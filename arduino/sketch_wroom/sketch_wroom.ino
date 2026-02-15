@@ -7,7 +7,7 @@ const char* ssid = "ElSenorNegro";//"ELTEX-46A0"; //"ELTEX-D660";
 const char* password = "pomidorka38";//"GP21424784"; //"GP21353620";
 const int timeDelay = 10000;  // задержка в мс
 
-#define DHTPIN 4        // GPIO пин для DHT11
+#define DHTPIN 26        // GPIO пин для DHT11
 #define DHTTYPE DHT11   // Тип датчика
 #define SENSOR_ID 1     // Порядковый номер датчика
 

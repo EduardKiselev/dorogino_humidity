@@ -105,7 +105,8 @@ def receive_data():
         
         # Пересылка в фоне
         # threading.Thread(target=forward_data, args=(data,), daemon=True).start()
-        forward_data(data)
+        data_with_ip = {**data, "ip_address": ip_address}
+        forward_data(data_with_ip)
         
         return jsonify({
             "status": "ok",
