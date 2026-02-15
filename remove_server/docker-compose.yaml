@@ -9,26 +9,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./collector/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "${DB_PORT:-5432}:5432"
     networks:
       - app_network
-    # healthcheck:
-    #   test: ["CMD-SHELL", "pg_isready -q -U ${DB_USER:-postgres}"]
-    #   interval: 5s
-    #   timeout: 5s
-    #   retries: 15
 
   collector:
     build:
       context: ./collector
       dockerfile: Dockerfile
     container_name: flask_collector
-    ports:
-      - "5000:5000"
+    expose:  # ← изменил ports на expose, т.к. доступ через Nginx
+      - "5000"
     depends_on:
       - db
-        #condition: service_healthy
     networks:
       - app_network
     environment:
@@ -53,8 +45,8 @@ services:
       context: ./front
       dockerfile: Dockerfile
     container_name: flask_front
-    ports:
-      - "${WEB_PORT:-80}:5000"
+    expose:  # ← изменил ports на expose, т.к. доступ через Nginx
+      - "5000"
     depends_on:
       - db
       - collector
@@ -71,6 +63,41 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-trololo}
       - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
     restart: unless-stopped
+
+  # Nginx reverse proxy
+  nginx:
+    build: ./nginx
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs
+      - ./nginx/logs:/var/log/nginx
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - front
+      - collector
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  # Certbot для получения сертификатов
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot_service
+    volumes:
+      - ./certs:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "
+      trap exit TERM;
+      while :; do
+        certbot renew --webroot -w /var/www/certbot;
+        sleep 12h & wait $${!};
+      done;
+      "
+
 volumes:
   postgres_data:
     driver: local
