@@ -70,6 +70,7 @@ def index():
         if reading.timestamp.tzinfo is None:
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
     
+    print(readings)
     
     return render_template(
         'index.html', 
