@@ -226,7 +226,7 @@ const yearDataBySensor = groupBySensor({{ year_data|tojson }});
 
 // Создаём графики для каждого сенсора
 {% for sensor_id in sensor_ids %}
-    const sensorId = {{ sensor_id }};
+    const sensorId = String({{ sensor_id }});
     
     // График за день
     if (dayDataBySensor[sensorId] && dayDataBySensor[sensorId].length > 0) {
