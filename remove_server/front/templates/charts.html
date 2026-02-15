@@ -48,10 +48,19 @@
 
 {% block extra_js %}
 
+<!-- Правильный порядок подключения: сначала Chart.js, потом адаптеры -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <script>
+// Отладка: проверяем загрузку библиотек
+console.log('✅ Chart.js загружен:', typeof Chart !== 'undefined');
+console.log('✅ date-fns загружен:', typeof dateFns !== 'undefined');
+
+// Храним все графики для перерисовки
+const charts = {};
+
 // Группируем данные по сенсорам
 function groupBySensor(data) {
     const grouped = {};
@@ -67,63 +76,126 @@ function groupBySensor(data) {
 // Создаём график с двумя осями Y
 function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
     const canvas = document.getElementById(canvasId);
+    
+    // Проверка существования элемента
     if (!canvas) {
-        console.error(`Canvas не найден: ${canvasId}`);
+        console.warn(`⚠️ Canvas не найден: #${canvasId}`);
         return null;
     }
-    const ctx = document.getElementById(canvasId).getContext('2d');
     
-    return new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.map(d => new Date(d.timestamp)),
-            datasets: [
-                {
-                    label: 'Температура (°C)',
-                    data: data.map(d => d.temperature),
-                    borderColor: 'rgb(255, 99, 132)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                    tension: 0.3,
-                    yAxisID: 'yTemp'
+    // Проверка данных
+    if (!data || data.length === 0) {
+        console.warn(`⚠️ Нет данных для графика ${canvasId}`);
+        return null;
+    }
+    
+    // Валидация дат
+    const invalidDates = data.filter(d => isNaN(new Date(d.timestamp).getTime()));
+    if (invalidDates.length > 0) {
+        console.error(`❌ Некорректные даты в ${canvasId}:`, invalidDates.slice(0, 3));
+        return null;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    try {
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => new Date(d.timestamp)),
+                datasets: [
+                    {
+                        label: 'Температура (°C)',
+                        data: data.map(d => d.temperature),
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'yTemp'
+                    },
+                    {
+                        label: 'Влажность (%)',
+                        data: data.map(d => d.humidity),
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'yHum'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
                 },
-                {
-                    label: 'Влажность (%)',
-                    data: data.map(d => d.humidity),
-                    borderColor: 'rgb(54, 162, 235)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    tension: 0.3,
-                    yAxisID: 'yHum'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    type: 'time',
-                    time: { unit: timeUnit },
-                    title: { display: true, text: 'Время' }
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
                 },
-                yTemp: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: { display: true, text: 'Температура (°C)' },
-                    grid: { drawOnChartArea: false }
-                },
-                yHum: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: { display: true, text: 'Влажность (%)' },
-                    grid: { drawOnChartArea: false },
-                    min: 0,
-                    max: 100
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { 
+                            unit: timeUnit,
+                            tooltipFormat: 'dd.MM.yyyy HH:mm'
+                        },
+                        title: { 
+                            display: true, 
+                            text: 'Время' 
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    yTemp: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { 
+                            display: true, 
+                            text: 'Температура (°C)' 
+                        },
+                        grid: { 
+                            drawOnChartArea: false 
+                        },
+                        ticks: {
+                            color: 'rgb(255, 99, 132)'
+                        }
+                    },
+                    yHum: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { 
+                            display: true, 
+                            text: 'Влажность (%)' 
+                        },
+                        grid: { 
+                            drawOnChartArea: false 
+                        },
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            color: 'rgb(54, 162, 235)'
+                        }
+                    }
                 }
             }
-        }
-    });
+        });
+        
+        console.log(`✅ График создан: ${canvasId}`);
+        return chart;
+        
+    } catch (error) {
+        console.error(`❌ Ошибка создания графика ${canvasId}:`, error);
+        return null;
+    }
 }
 
 // Группируем данные по сенсорам
@@ -135,17 +207,66 @@ const yearDataBySensor = groupBySensor({{ year_data|tojson }});
 {% for sensor_id in sensor_ids %}
     const sensorId = {{ sensor_id }};
     
+    // График за день
     if (dayDataBySensor[sensorId] && dayDataBySensor[sensorId].length > 0) {
-        createDualAxisChart('chart-day-' + sensorId, dayDataBySensor[sensorId], 'hour');
+        charts[`chart-day-${sensorId}`] = createDualAxisChart(
+            `chart-day-${sensorId}`, 
+            dayDataBySensor[sensorId], 
+            'hour'
+        );
+    } else {
+        console.log(`ℹ️ Нет данных за день для сенсора ${sensorId}`);
     }
     
+    // График за месяц
     if (monthDataBySensor[sensorId] && monthDataBySensor[sensorId].length > 0) {
-        createDualAxisChart('chart-month-' + sensorId, monthDataBySensor[sensorId], 'day');
+        charts[`chart-month-${sensorId}`] = createDualAxisChart(
+            `chart-month-${sensorId}`, 
+            monthDataBySensor[sensorId], 
+            'day'
+        );
+    } else {
+        console.log(`ℹ️ Нет данных за месяц для сенсора ${sensorId}`);
     }
     
+    // График за год
     if (yearDataBySensor[sensorId] && yearDataBySensor[sensorId].length > 0) {
-        createDualAxisChart('chart-year-' + sensorId, yearDataBySensor[sensorId], 'month');
+        charts[`chart-year-${sensorId}`] = createDualAxisChart(
+            `chart-year-${sensorId}`, 
+            yearDataBySensor[sensorId], 
+            'month'
+        );
+    } else {
+        console.log(`ℹ️ Нет данных за год для сенсора ${sensorId}`);
     }
 {% endfor %}
+
+// Перерисовка графиков при переключении вкладок
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', (event) => {
+            const targetId = event.target.getAttribute('data-bs-target');
+            const sensorId = targetId.replace('#sensor-', '');
+            
+            // Перерисовываем все графики на вкладке
+            ['day', 'month', 'year'].forEach(period => {
+                const chartKey = `chart-${period}-${sensorId}`;
+                if (charts[chartKey]) {
+                    charts[chartKey].resize();
+                    charts[chartKey].update();
+                    console.log(`🔄 Перерисован график: ${chartKey}`);
+                }
+            });
+        });
+    });
+    
+    console.log('📊 Всего графиков создано:', Object.keys(charts).length);
+});
+
+// Отладка данных (можно удалить после проверки)
+console.log('📊 Данные за день:', {{ day_data|tojson }});
+console.log('📊 Данные за месяц:', {{ month_data|tojson }});
+console.log('📊 Данные за год:', {{ year_data|tojson }});
+console.log('🆔 Сенсоры:', {{ sensor_ids|tojson }});
 </script>
 {% endblock %}
