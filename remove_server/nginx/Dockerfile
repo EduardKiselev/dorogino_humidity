@@ -1,7 +1,7 @@
 FROM nginx:alpine
 
 # Копируем ВРЕМЕННУЮ конфигурацию
-COPY nginx-temp.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Создаем директорию для ACME challenge
 RUN mkdir -p /var/www/certbot
