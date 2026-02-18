@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from config import Config
-from models import db, SensorReading, Setting, SettingChangeLog
+from models import db, SensorReading, Setting, SettingChangeLog, ControllerStatus
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 from zoneinfo import ZoneInfo
