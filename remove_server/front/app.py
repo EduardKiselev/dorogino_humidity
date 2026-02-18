@@ -294,6 +294,7 @@ def control_humidifier_job():
                     current_status = controller_status.status
                     print(f"current_status {current_status}, {type(current_status)}") 
                     current_status = str(current_status)
+                    new_status = current_status
                     # Apply hysteresis logic
                     if current_status == "OFF":
                         print("Turning ON")
