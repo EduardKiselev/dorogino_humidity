@@ -43,6 +43,20 @@ services:
       - FORWARD_TIMEOUT=${FORWARD_TIMEOUT:-5}
       - DEBUG=${DEBUG:-False}
     restart: unless-stopped
+  
+  controller_manager:
+    build:
+      context: ./controller_manager
+      dockerfile: Dockerfile
+    container_name: controller_manager
+    ports:
+      - "5001:5001"
+    networks:
+      - app_network
+    environment:
+      - TZ=Asia/Novosibirsk
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
     
 
 volumes:
