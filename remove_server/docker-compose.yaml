@@ -27,6 +27,7 @@ services:
     networks:
       - app_network
     environment:
+      - TZ=Asia/Novosibirsk
       - PYTHONUNBUFFERED=1
       - DB_HOST=db
       - DB_PORT=5432
@@ -56,6 +57,7 @@ services:
     networks:
       - app_network
     environment:
+      - TZ=Asia/Novosibirsk
       - PYTHONUNBUFFERED=1
       - DB_HOST=db
       - DB_PORT=5432
