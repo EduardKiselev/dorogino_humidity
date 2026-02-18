@@ -289,6 +289,7 @@ def control_humidifier_job():
                 
                 # Determine new status based on current humidity and settings
                 new_status = None
+                print(f"controller_status {controller_status}") 
                 if controller_status:
                     current_status = controller_status.status
                     # Apply hysteresis logic
