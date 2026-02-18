@@ -4,10 +4,13 @@ from config import Config
 from models import db, SensorReading, Setting, SettingChangeLog
 from datetime import datetime, timezone, timedelta
 import pandas as pd
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+target_tz = ZoneInfo("Asia/Novosibirsk")
 
 # === Вспомогательные функции ===
 
@@ -69,9 +72,10 @@ def index():
     # Convert to local timezone if needed
     for reading in readings:
         if reading.timestamp.tzinfo is None:
+
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
     #    print(reading.sensor_id, reading.timestamp,reading.humidity, reading.temperature)
-
+     #reading.timestamp = reading.timestamp.astimezone(target_tz)
     
     return render_template(
         'index.html', 
