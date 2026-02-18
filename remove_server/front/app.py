@@ -186,6 +186,7 @@ def settings():
                         current_setting.humidity = humidity
                         current_setting.histeresys_up = histeresys_up
                         current_setting.histeresys_down = histeresys_down
+                        current_setting.timestamp = datetime.now(timezone.utc)
                      #   db.session.merge(current_setting)
                     else:
                         # Создаем новую запись с настройками
