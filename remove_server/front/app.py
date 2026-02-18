@@ -186,17 +186,17 @@ def settings():
                         current_setting.humidity = humidity
                         current_setting.histeresys_up = histeresys_up
                         current_setting.histeresys_down = histeresys_down
-                        db.session.merge(current_setting)
-                    
-                    # Создаем новую запись с настройками
-                    new_setting = Setting(
-                        sensor_id=sensor_id,
-                        hour_of_day=hour,
-                        humidity=humidity,
-                        histeresys_up=histeresys_up,
-                        histeresys_down=histeresys_down
-                    )
-                    db.session.add(new_setting)
+                     #   db.session.merge(current_setting)
+                    else:
+                        # Создаем новую запись с настройками
+                        new_setting = Setting(
+                            sensor_id=sensor_id,
+                            hour_of_day=hour,
+                            humidity=humidity,
+                            histeresys_up=histeresys_up,
+                            histeresys_down=histeresys_down
+                        )
+                        db.session.add(new_setting)
             
             db.session.commit()
             flash('Настройки для всех датчиков и часов успешно сохранены!', 'success')
