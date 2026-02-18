@@ -323,6 +323,7 @@ def control_humidifier_job():
                     
                     # Send command to controller
                     try:
+                        print(f'Sending command to controller {sensor_id} status - {new_status}...')
                         response = requests.get(f"http://10.0.10.2:5001/{sensor_id}/{new_status}")
                         if response.status_code == 200:
                             print(f"Successfully sent {new_status} command to controller {sensor_id}")
