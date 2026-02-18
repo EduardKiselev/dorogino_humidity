@@ -3,3 +3,5 @@ psycopg2-binary==2.9.9
 pandas==2.1.4
 sqlalchemy==2.0.23
 flask-sqlalchemy==3.0.5
+APScheduler==3.10.4
+requests==2.31.0

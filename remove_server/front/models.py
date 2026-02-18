@@ -75,3 +75,20 @@ class SettingChangeLog(db.Model):
             'histeresys_up': self.histeresys_up,
             'histeresys_down': self.histeresys_down
         }
+
+class ControllerStatus(db.Model):
+    """Table to store the current status of each controller"""
+    __tablename__ = 'controller_statuses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    controller_id = db.Column(db.Integer, nullable=False, unique=True)  # Same as sensor_id
+    status = db.Column(db.String(10), nullable=False)  # ON or OFF
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'controller_id': self.controller_id,
+            'status': self.status,
+            'last_updated': self.last_updated.isoformat()
+        }

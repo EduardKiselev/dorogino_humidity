@@ -5,6 +5,13 @@ from models import db, SensorReading, Setting, SettingChangeLog
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 from zoneinfo import ZoneInfo
+from apscheduler.schedulers.background import BackgroundScheduler
+import requests
+from threading import Lock
+
+# Global scheduler instance
+scheduler = None
+scheduler_lock = Lock()
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -69,13 +76,10 @@ def index():
         SensorReading.timestamp.desc()
     ).limit(100).all()
     
-    # Convert to local timezone if needed
     for reading in readings:
         if reading.timestamp.tzinfo is None:
-
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
-    #    print(reading.sensor_id, reading.timestamp,reading.humidity, reading.temperature)
-     #reading.timestamp = reading.timestamp.astimezone(target_tz)
+
     
     return render_template(
         'index.html', 
@@ -233,17 +237,123 @@ def settings():
     
     return render_template('settings.html', sensor_settings=sensor_settings)
 
-@app.route('/api/readings/latest')
-def api_latest_readings():
-    """API для получения последних показаний"""
-    limit = request.args.get('limit', 100, type=int)
-    readings = SensorReading.query.order_by(
-        SensorReading.timestamp.desc()
-    ).limit(limit).all()
-    
-    return jsonify([r.to_dict() for r in reversed(readings)])
 
-# === Запуск ===
+def control_humidifier_job():
+    """
+    Cron job function that checks sensor data and controls humidifiers
+    Runs every minute to check sensor data from last 15 minutes
+    """
+    with app.app_context():  # Ensure we have an application context
+        try:
+            # Calculate time threshold (15 minutes ago)
+            fifteen_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=15)
+            
+            # Get the most recent reading for each sensor in the last 15 minutes
+            subquery = db.session.query(
+                SensorReading.sensor_id,
+                db.func.max(SensorReading.timestamp).label('max_time')
+            ).filter(
+                SensorReading.timestamp >= fifteen_minutes_ago
+            ).group_by(SensorReading.sensor_id).subquery()
+            
+            latest_readings = db.session.query(SensorReading).join(
+                subquery,
+                (SensorReading.sensor_id == subquery.c.sensor_id) &
+                (SensorReading.timestamp == subquery.c.max_time)
+            ).all()
+            
+            # Process each sensor's data
+            for reading in latest_readings:
+                sensor_id = reading.sensor_id
+                current_humidity = reading.humidity
+                
+                # Get the setting for this sensor and current hour
+                current_hour = reading.timestamp.hour
+                setting = Setting.query.filter_by(
+                    sensor_id=sensor_id,
+                    hour_of_day=current_hour
+                ).first()
+                
+                if not setting:
+                    print(f"No setting found for sensor {sensor_id} at hour {current_hour}")
+                    continue
+                
+                # Determine if humidifier should be ON or OFF
+                target_humidity = setting.humidity
+                hysteresis_up = setting.histeresys_up
+                hysteresis_down = setting.histeresys_down
+                
+                # Get current controller status
+                controller_status = ControllerStatus.query.filter_by(controller_id=sensor_id).first()
+                
+                # Determine new status based on current humidity and settings
+                new_status = None
+                if controller_status:
+                    current_status = controller_status.status
+                    # Apply hysteresis logic
+                    if current_status == "OFF":
+                        # Turn ON if humidity is below target minus lower hysteresis
+                        if current_humidity < (target_humidity - hysteresis_down):
+                            new_status = "ON"
+                    elif current_status == "ON":
+                        # Turn OFF if humidity is above target plus upper hysteresis
+                        if current_humidity > (target_humidity + hysteresis_up):
+                            new_status = "OFF"
+                else:
+                    # If no status exists yet, set initial state based on current humidity
+                    if current_humidity < (target_humidity - hysteresis_down):
+                        new_status = "ON"
+                    else:
+                        new_status = "OFF"
+                
+                # Update controller status if changed
+                if new_status and new_status != (controller_status.status if controller_status else None):
+                    if controller_status:
+                        # Update existing status
+                        controller_status.status = new_status
+                        controller_status.last_updated = datetime.now(timezone.utc)
+                    else:
+                        # Create new status record
+                        controller_status = ControllerStatus(
+                            controller_id=sensor_id,
+                            status=new_status
+                        )
+                        db.session.add(controller_status)
+                    
+                    # Send command to controller
+                    try:
+                        response = requests.get(f"http://10.0.10.2/{sensor_id}/{new_status}")
+                        if response.status_code == 200:
+                            print(f"Successfully sent {new_status} command to controller {sensor_id}")
+                        else:
+                            print(f"Failed to send {new_status} command to controller {sensor_id}, status: {response.status_code}")
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error sending command to controller {sensor_id}: {e}")
+            
+            # Commit all changes to the database
+            db.session.commit()
+            print(f"Humidifier control job completed at {datetime.now(timezone.utc)}")
+            
+        except Exception as e:
+            print(f"Error in control_humidifier_job: {e}")
+            db.session.rollback()
+
+def init_scheduler():
+    """Initialize the background scheduler"""
+    global scheduler
+    
+    with scheduler_lock:
+        if scheduler is None:
+            scheduler = BackgroundScheduler()
+            scheduler.add_job(
+                func=control_humidifier_job,
+                trigger="interval",
+                minutes=1,  # Run every minute
+                id='humidifier_control_job',
+                replace_existing=True
+            )
+            scheduler.start()
+            print("Scheduler started for humidifier control")
 
 if __name__ == '__main__':
     with app.app_context():
@@ -262,4 +372,8 @@ if __name__ == '__main__':
                     )
                     db.session.add(default_setting)
         db.session.commit()
+        
+        # Initialize the scheduler after db initialization
+        init_scheduler()
+        
     app.run(host='0.0.0.0', port=5000, debug=True)

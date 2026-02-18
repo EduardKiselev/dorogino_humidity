@@ -99,42 +99,6 @@ def receive_data():
         print(f"❌ Ошибка: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/get_data', methods=['GET'])
-def get_data():
-    """Получение последних 10 записей из БД"""
-    try:
-        limit = int(request.args.get('limit', 10))
-        limit = min(limit, 100)  # Ограничение максимум 100 записей
-        
-        session = Session()
-        result = session.query(SensorReading).order_by(
-            SensorReading.timestamp.desc()
-        ).limit(limit).all()
-        
-        data = []
-        for record in result:
-            data.append({
-                "id": record.id,
-                "timestamp": record.timestamp.isoformat(),
-                "sensor_id": record.sensor_id,
-                "temperature": record.temperature,
-                "humidity": record.humidity,
-                "voltage": record.voltage,
-                "ip_address": record.ip_address
-            })
-        
-        session.close()
-        
-        return jsonify({
-            "status": "ok",
-            "count": len(data),
-            "data": data
-        }), 200
-        
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
 @app.route('/get_data/<int:sensor_id>', methods=['GET'])
 def get_data_by_sensor(sensor_id):
     """Получение последних 10 записей конкретного датчика"""
@@ -220,7 +184,7 @@ def stats():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# New endpoint to get current settings for a sensor at a given hour
+
 @app.route('/settings/<int:sensor_id>/<int:hour>', methods=['GET'])
 def get_settings_for_hour(sensor_id, hour):
     """Get settings for a specific sensor at a specific hour"""
