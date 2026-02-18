@@ -306,7 +306,7 @@ def control_humidifier_job():
                         new_status = "ON"
                     else:
                         new_status = "OFF"
-                
+                print(f"New status: {new_status}")
                 # Update controller status if changed
                 if new_status:
                     if controller_status:
