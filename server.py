@@ -70,6 +70,7 @@ def receive_data():
     try:
         data = request.get_json()
         timestamp = datetime.now()
+        print(timestamp)
         ip_address = request.remote_addr
         
         print(f"📡 [{timestamp}] {ip_address} -> {data}")
