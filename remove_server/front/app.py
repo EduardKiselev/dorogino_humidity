@@ -292,13 +292,16 @@ def control_humidifier_job():
                 print(f"controller_status {controller_status}") 
                 if controller_status:
                     current_status = controller_status.status
-                    print(f"current_status {current_status}") 
+                    print(f"current_status {current_status}, {type(current_status)}") 
+                    current_status = str(current_status)
                     # Apply hysteresis logic
                     if current_status == "OFF":
+                        print("Turning ON")
                         # Turn ON if humidity is below target minus lower hysteresis
                         if current_humidity < (target_humidity - hysteresis_down):
                             new_status = "ON"
                     elif current_status == "ON":
+                        print("Turning OFF")
                         # Turn OFF if humidity is above target plus upper hysteresis
                         if current_humidity > (target_humidity + hysteresis_up):
                             new_status = "OFF"
