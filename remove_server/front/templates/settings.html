@@ -4,7 +4,7 @@
 {% block title %}Настройки{% endblock %}
 
 {% block content %}
-<h2>⚙️ Настройки системы управления влажностью (5 датчиков)</h2>
+<h2>⚙️ Настройки системы управления влажностью (5 датчиков, почасовая настройка)</h2>
 
 <div class="card">
     <div class="card-body">
@@ -14,44 +14,51 @@
                 <h4>Датчик {{ sensor_id }}</h4>
                 
                 <div class="mb-3">
-                    <label class="form-label"><strong>Порог влажности (%)</strong></label>
-                    <input type="number" class="form-control" name="humidity_sensor_{{ sensor_id }}" 
-                           value="{{ "%.1f"|format(sensor_settings[sensor_id].humidity) }}" 
-                           min="0" max="100" step="0.1" required>
-                    <div class="form-text">
-                        При превышении этого значения увлажнитель будет отключаться
-                    </div>
-                </div>
-
-                <div class="mb-3">
                     <label class="form-label"><strong>Верхний гистерезис (%)</strong></label>
                     <input type="number" class="form-control" name="histeresys_up_sensor_{{ sensor_id }}" 
-                           value="{{ "%.1f"|format(sensor_settings[sensor_id].histeresys_up) }}" 
+                           value="{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_up) }}" 
                            min="0" max="20" step="0.1" required>
                     <div class="form-text">
-                        Разница между включением и выключением сверху
+                        Разница между включением и выключением сверху (одинакова для всех часов)
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label"><strong>Нижний гистерезис (%)</strong></label>
                     <input type="number" class="form-control" name="histeresys_down_sensor_{{ sensor_id }}" 
-                           value="{{ "%.1f"|format(sensor_settings[sensor_id].histeresys_down) }}" 
+                           value="{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_down) }}" 
                            min="0" max="20" step="0.1" required>
                     <div class="form-text">
-                        Разница между включением и выключением снизу
+                        Разница между включением и выключением снизу (одинакова для всех часов)
                     </div>
                 </div>
 
-                <div class="alert alert-info">
+                <div class="row">
+                    <div class="col-12">
+                        <h5>Порог влажности по часам (%)</h5>
+                        <div class="row g-2">
+                            {% for hour in range(24) %}
+                            <div class="col-md-2 col-sm-3 col-4">
+                                <label class="form-label small">Час {{ "%02d"|format(hour) }}</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="humidity_sensor_{{ sensor_id }}_hour_{{ hour }}" 
+                                       value="{{ "%.1f"|format(sensor_settings[sensor_id][hour].humidity) }}" 
+                                       min="0" max="100" step="0.1" required>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3">
                     <strong>Текущие значения для датчика {{ sensor_id }}:</strong><br>
-                    Включение: <strong>{{ "%.1f"|format(sensor_settings[sensor_id].humidity - sensor_settings[sensor_id].histeresys_down) }}%</strong><br>
-                    Выключение: <strong>{{ "%.1f"|format(sensor_settings[sensor_id].humidity + sensor_settings[sensor_id].histeresys_up) }}%</strong>
+                    Верхний гистерезис: <strong>{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_up) }}%</strong><br>
+                    Нижний гистерезис: <strong>{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_down) }}%</strong>
                 </div>
             </div>
             {% endfor %}
 
-            <button type="submit" class="btn btn-success">Сохранить настройки для всех датчиков</button>
+            <button type="submit" class="btn btn-success">Сохранить настройки для всех датчиков и часов</button>
         </form>
     </div>
 </div>

@@ -220,6 +220,43 @@ def stats():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# New endpoint to get current settings for a sensor at a given hour
+@app.route('/settings/<int:sensor_id>/<int:hour>', methods=['GET'])
+def get_settings_for_hour(sensor_id, hour):
+    """Get settings for a specific sensor at a specific hour"""
+    try:
+        if hour < 0 or hour > 23:
+            return jsonify({"status": "error", "message": "Hour must be between 0 and 23"}), 400
+
+        session = Session()
+        result = session.execute(text("""
+            SELECT humidity, histeresys_up, histeresys_down
+            FROM settings
+            WHERE sensor_id = :sensor_id AND hour_of_day = :hour
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """), {"sensor_id": sensor_id, "hour": hour})
+        
+        row = result.fetchone()
+        
+        if not row:
+            session.close()
+            return jsonify({"status": "error", "message": "No settings found for this sensor and hour"}), 404
+        
+        settings = {
+            "sensor_id": sensor_id,
+            "hour": hour,
+            "humidity": row[0],
+            "histeresys_up": row[1],
+            "histeresys_down": row[2]
+        }
+        
+        session.close()
+        
+        return jsonify(settings), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == '__main__':
     print(f"🚀 Запуск сервера на {APP_HOST}:{APP_PORT}")
     print(f"🗄️  База данных: {DB_HOST}:{DB_PORT}/{DB_NAME}")
@@ -229,5 +266,6 @@ if __name__ == '__main__':
     print(f"   GET  /get_data/<sensor_id> - данные по датчику")
     print(f"   GET  /health - проверка работоспособности")
     print(f"   GET  /stats - статистика")
+    print(f"   GET  /settings/<sensor_id>/<hour> - настройки для датчика по часам")
     
     app.run(host=APP_HOST, port=APP_PORT, threaded=True, debug=DEBUG)

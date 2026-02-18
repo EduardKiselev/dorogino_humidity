@@ -28,21 +28,26 @@ class SensorReading(db.Model):
         }
 
 class Setting(db.Model):
-    """Таблица с настройками для каждого датчика"""
+    """Таблица с настройками для каждого датчика по часам"""
     __tablename__ = 'settings'
     
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (1-5)
+    hour_of_day = db.Column(db.Integer, nullable=False)  # Час суток (0-23)
     humidity = db.Column(db.Float)  # порог влажности
     histeresys_up = db.Column(db.Float)  # верхний гистерезис
     histeresys_down = db.Column(db.Float)  # нижний гистерезис
+    
+    # Уникальное ограничение для комбинации sensor_id и hour_of_day
+    __table_args__ = (db.UniqueConstraint('sensor_id', 'hour_of_day'),)
     
     def to_dict(self):
         return {
             'id': self.id,
             'timestamp': self.timestamp.isoformat(),
             'sensor_id': self.sensor_id,
+            'hour_of_day': self.hour_of_day,
             'humidity': self.humidity,
             'histeresys_up': self.histeresys_up,
             'histeresys_down': self.histeresys_down
@@ -55,6 +60,7 @@ class SettingChangeLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (если применимо)
+    hour_of_day = db.Column(db.Integer, nullable=False)  # Час суток (0-23)
     humidity = db.Column(db.Float)  # значение влажности
     histeresys_up = db.Column(db.Float)  # верхний гистерезис
     histeresys_down = db.Column(db.Float)  # нижний гистерезис
@@ -64,6 +70,7 @@ class SettingChangeLog(db.Model):
             'id': self.id,
             'timestamp': self.timestamp.isoformat(),
             'sensor_id': self.sensor_id,
+            'hour_of_day': self.hour_of_day,
             'humidity': self.humidity,
             'histeresys_up': self.histeresys_up,
             'histeresys_down': self.histeresys_down

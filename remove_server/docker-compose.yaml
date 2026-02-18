@@ -10,7 +10,8 @@ services:
       - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./collector/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Remove init.sql from startup since we'll use migrations
+      # - ./collector/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app_network
 
@@ -99,6 +100,25 @@ services:
         sleep 12h & wait $${!};
       done;
       "
+
+  migrate:
+    build:
+      context: ./migrate
+      dockerfile: Dockerfile
+    container_name: db_migrator
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-sensor_data}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+    networks:
+      - app_network
+    volumes:
+      - ./migrations:/app/migrations
+    command: ["python", "migrate.py", "apply"]
 
 volumes:
   postgres_data:
