@@ -351,7 +351,7 @@ def init_scheduler():
             scheduler.add_job(
                 func=control_humidifier_job,
                 trigger="interval",
-                minutes=1,  # Run every minute
+                seconds=10,  # Run every minute
                 id='humidifier_control_job',
                 replace_existing=True
             )
