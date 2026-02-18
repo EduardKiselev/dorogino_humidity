@@ -308,7 +308,7 @@ def control_humidifier_job():
                         new_status = "OFF"
                 
                 # Update controller status if changed
-                if new_status and new_status != (controller_status.status if controller_status else None):
+                if new_status:
                     if controller_status:
                         # Update existing status
                         controller_status.status = new_status
