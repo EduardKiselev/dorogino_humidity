@@ -8,7 +8,7 @@ BEGIN
         FOR hour_val IN 0..23 LOOP
             INSERT INTO settings (sensor_id, hour_of_day, humidity, histeresys_up, histeresys_down)
             VALUES (sensor_id, hour_val, 60.0, 5.0, 5.0)
-            ON CONFLICT DO NOTHING;
+            ON CONFLICT (sensor_id, hour_of_day) DO NOTHING;
         END LOOP;
     END LOOP;
 END $$;
