@@ -267,7 +267,7 @@ def control_humidifier_job():
             for reading in latest_readings:
                 sensor_id = reading.sensor_id
                 current_humidity = reading.humidity
-                
+                print(f"CRON JOB: Sensor ID: {sensor_id}, Current Humidity: {current_humidity}")
                 # Get the setting for this sensor and current hour
                 current_hour = reading.timestamp.hour
                 setting = Setting.query.filter_by(

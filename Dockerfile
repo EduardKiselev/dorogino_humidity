@@ -10,4 +10,4 @@ COPY init.sql .
 
 EXPOSE 5000
 
-CMD ["python", "server.py"]
+CMD ["python", "korobochka.py"]
