@@ -283,6 +283,7 @@ def control_humidifier_job():
                 target_humidity = setting.humidity
                 hysteresis_up = setting.histeresys_up
                 hysteresis_down = setting.histeresys_down
+                print('1111',current_hour, sensor_id, target_humidity, hysteresis_up, hysteresis_down)
                 
                 # Get current controller status
                 controller_status = ControllerStatus.query.filter_by(controller_id=sensor_id).first()
