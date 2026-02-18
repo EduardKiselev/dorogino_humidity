@@ -291,7 +291,6 @@ def control_humidifier_job():
                 new_status = None
                 if controller_status:
                     current_status = controller_status.status
-                    print(f"current_status {current_status}, {type(current_status)}") 
                     current_status = str(current_status)
                     new_status = current_status
                     # Apply hysteresis logic
@@ -325,7 +324,6 @@ def control_humidifier_job():
                     
                     # Send command to controller
                     try:
-                        print(f'Sending command to controller {sensor_id} status - {new_status}...')
                         response = requests.get(f"http://10.0.10.2:5001/{sensor_id}/{new_status}")
                         if response.status_code == 200:
                             print(f"Successfully sent {new_status} command to controller {sensor_id}")
@@ -352,7 +350,7 @@ def init_scheduler():
             scheduler.add_job(
                 func=control_humidifier_job,
                 trigger="interval",
-                seconds=10,  # Run every minute
+                minutes=1,  # Run every minute
                 id='humidifier_control_job',
                 replace_existing=True
             )
