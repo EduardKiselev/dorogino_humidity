@@ -312,7 +312,7 @@ def control_humidifier_job():
                     if controller_status:
                         # Update existing status
                         controller_status.status = new_status
-                        controller_status.last_updated = datetime.now(timezone.utc)
+                        controller_status.last_updated = datetime.now()
                     else:
                         # Create new status record
                         controller_status = ControllerStatus(

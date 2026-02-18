@@ -9,7 +9,7 @@ class SensorReading(db.Model):
     __tablename__ = 'sensor_readings'
     
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(), index=True)
     sensor_id = db.Column(db.Integer, nullable=False, index=True)
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
@@ -32,7 +32,7 @@ class Setting(db.Model):
     __tablename__ = 'settings'
     
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now())
     sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (1-5)
     hour_of_day = db.Column(db.Integer, nullable=False)  # Час суток (0-23)
     humidity = db.Column(db.Float)  # порог влажности
@@ -58,7 +58,7 @@ class SettingChangeLog(db.Model):
     __tablename__ = 'settings_logs'
     
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now())
     sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (если применимо)
     hour_of_day = db.Column(db.Integer, nullable=False)  # Час суток (0-23)
     humidity = db.Column(db.Float)  # значение влажности
@@ -83,7 +83,7 @@ class ControllerStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     controller_id = db.Column(db.Integer, nullable=False, unique=True)  # Same as sensor_id
     status = db.Column(db.String(10), nullable=False)  # ON or OFF
-    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now())
     
     def to_dict(self):
         return {
