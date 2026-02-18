@@ -6,6 +6,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY korobochka.py .
+# COPY init.sql .
 
 EXPOSE 5000
 
