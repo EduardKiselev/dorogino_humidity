@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mydatabase}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  app:
+    build: .
+    container_name: flask_app
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+    environment:
+      - TZ=Asia/Novosibirsk
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-mydatabase}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - FORWARD_URL=${FORWARD_URL}
+      - FORWARD_TIMEOUT=${FORWARD_TIMEOUT:-5}
+      - DEBUG=${DEBUG:-False}
+    restart: unless-stopped
+    
+  controller_manager:
+    build:
+      context: ./controller_manager
+      dockerfile: Dockerfile
+    container_name: controller_manager
+    ports:
+      - "5001:5001"
+    networks:
+      - app_network
+    environment:
+      - TZ=Asia/Novosibirsk
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge

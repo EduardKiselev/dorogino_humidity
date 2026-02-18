@@ -243,6 +243,7 @@ def control_humidifier_job():
     Cron job function that checks sensor data and controls humidifiers
     Runs every minute to check sensor data from last 15 minutes
     """
+    print("🚀 Запуск функции контроля влажности")
     with app.app_context():  # Ensure we have an application context
         try:
             # Calculate time threshold (15 minutes ago)
@@ -322,7 +323,7 @@ def control_humidifier_job():
                     
                     # Send command to controller
                     try:
-                        response = requests.get(f"http://10.0.10.2/{sensor_id}/{new_status}")
+                        response = requests.get(f"http://10.0.10.2:5001/{sensor_id}/{new_status}")
                         if response.status_code == 200:
                             print(f"Successfully sent {new_status} command to controller {sensor_id}")
                         else:
