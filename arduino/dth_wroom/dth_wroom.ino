@@ -5,11 +5,11 @@
 // === НАСТРОЙКИ ===
 const char* ssid = "ElSenorNegro";
 const char* password = "pomidorka38";
-const int timeDelay = 10000;  // задержка в мс
+const int timeDelay = 60000;  // задержка в мс
 
-#define DHTPIN 26
+#define DHTPIN 25
 #define DHTTYPE DHT11
-#define SENSOR_ID 2
+#define SENSOR_ID 1
 
 const char* server = "192.168.10.100";
 const int serverPort = 5000;
