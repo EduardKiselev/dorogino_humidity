@@ -101,12 +101,12 @@ void loop() {
 
   // OLED Display
   display.clearDisplay();
-  display.setTextSize(3);
+  display.setTextSize(4);
   display.setCursor(0, 0);
-  display.print(t, 1); display.println(" C");
-  display.print(h, 1); display.println(" %");
+ // display.print(t, 1); display.println(" C");
+  display.print(h, 1); display.println("%");
   display.setTextSize(1);
-  display.print("P: "); display.println(p, 0);
+ // display.print("P: "); display.println(p, 0);
   display.display();
 
   // HTTP
