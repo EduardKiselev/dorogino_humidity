@@ -1,7 +1,8 @@
 # server.py
 from flask import Flask, request, jsonify
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import text,create_engine, Column, Integer, String, DateTime, Float
+from sqlalchemy import text,create_engine, Column, Integer, String, DateTime, Float, UniqueConstraint
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
 import time
@@ -32,9 +33,13 @@ Base = declarative_base()
 
 class SensorReading(Base):
     __tablename__ = 'sensor_readings'
+
+    __table_args__ = (
+        UniqueConstraint('timestamp', 'sensor_id', name='uq_sensor_time'),
+    )
     
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.now)
+    timestamp = Column(DateTime, nullable=False)
     sensor_id = Column(Integer, nullable=False)
     temperature = Column(Float)
     humidity = Column(Float)
@@ -64,24 +69,38 @@ def receive_data():
         if sensor_id is None:
             return jsonify({"status": "error", "message": "Missing sensor_id"}), 400
         
+        values = {
+            "timestamp": timestamp,
+            "sensor_id": int(sensor_id),
+            "temperature": float(data.get('temperature')) if data.get('temperature') is not None else None,
+            "humidity": float(data.get('humidity')) if data.get('humidity') is not None else None,
+            "voltage": float(data.get('voltage')) if data.get('voltage') is not None else None,
+            "ip_address": ip_address
+        }
+
+        stmt = insert(SensorReading).values(**values)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['timestamp', 'sensor_id']).returning(SensorReading.id)
+        
         # Запись в БД
         session = Session()
         try:
-            db_record = SensorReading(
-                timestamp=timestamp,
-                sensor_id=int(sensor_id),
-                temperature=float(data.get('temperature')) if data.get('temperature') is not None else None,
-                humidity=float(data.get('humidity')) if data.get('humidity') is not None else None,
-                voltage=float(data.get('voltage')) if data.get('voltage') is not None else None,
-                ip_address=ip_address
-            )
-            session.add(db_record)
+            result = session.execute(stmt)
+            fetched = result.fetchone()  # ← Забираем ID сразу
             session.commit()
-            record_id = db_record.id
-            print(f"💾 Записано в БД: ID={record_id}")
+            
+            if fetched is not None:
+                record_id = fetched[0]             
+            else:
+                # Дубликат: находим существующий ID
+                existing = session.execute(
+                    text("SELECT id FROM sensor_readings WHERE timestamp = :ts AND sensor_id = :sid"),
+                    {"ts": timestamp, "sid": sensor_id}
+                ).fetchone()
+                record_id = existing[0] if existing else None
         except Exception as e:
             session.rollback()
-            raise e
+            print(f"❌ DB Error: {e}")
+            return jsonify({"status": "error", "message": str(e)}), 500
         finally:
             session.close()
         
@@ -89,7 +108,8 @@ def receive_data():
             "status": "ok",
             "id": record_id,
             "timestamp": timestamp.isoformat(),
-            "sensor_id": sensor_id
+            "sensor_id": sensor_id,
+            "inserted": fetched is not None
         }), 200
         
     except ValueError as e:
