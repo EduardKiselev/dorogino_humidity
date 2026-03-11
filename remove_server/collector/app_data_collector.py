@@ -74,8 +74,9 @@ def receive_data():
             "sensor_id": int(sensor_id),
             "temperature": float(data.get('temperature')) if data.get('temperature') is not None else None,
             "humidity": float(data.get('humidity')) if data.get('humidity') is not None else None,
-            "voltage": float(data.get('voltage')) if data.get('voltage') is not None else None,
-            "ip_address": ip_address
+            "source_ip": str(data.get('source_ip')) if data.get('source_ip') is not None else None,
+            "destination_ip": str(data.get('destination_ip')) if data.get('destination_ip') is not None else None,
+            
         }
 
         stmt = insert(SensorReading).values(**values)
