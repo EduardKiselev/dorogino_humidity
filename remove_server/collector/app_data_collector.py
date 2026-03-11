@@ -58,7 +58,7 @@ def receive_data():
         nsk_tz = timezone(timedelta(hours=7))
         data = request.get_json()
         timestamp = datetime.now(nsk_tz).replace(tzinfo=None)
-        ip_address = data.get('ip_address')
+        ip_address = data.get('destination_ip')
         puid = str(data.get('puid'))
         
         print(f"REMOTE SERVER COLLECTOR: [{timestamp}] from sensor ip {ip_address} -> {data}")
