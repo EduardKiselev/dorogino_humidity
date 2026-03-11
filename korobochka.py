@@ -95,7 +95,7 @@ def receive_data():
                 temperature=float(data.get('temperature')) if data.get('temperature') is not None else None,
                 humidity=float(data.get('humidity')) if data.get('humidity') is not None else None,
                 voltage=float(data.get('voltage')) if data.get('voltage') is not None else None,
-                source_ip=source_ip
+                ip_address=source_ip
             )
             session.add(db_record)
             session.commit()
