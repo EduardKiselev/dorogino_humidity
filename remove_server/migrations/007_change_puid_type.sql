@@ -1,0 +1,2 @@
+ALTER TABLE sensor_readings 
+ALTER COLUMN puid TYPE VARCHAR(64);
