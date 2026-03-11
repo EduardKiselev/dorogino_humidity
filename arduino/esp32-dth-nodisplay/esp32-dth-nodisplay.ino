@@ -1,22 +1,25 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <DHT.h>
 #include "esp_system.h"  // esp_random()
 
 // === НАСТРОЙКИ ===
 const char* ssid = "ElSenorNegro";
 const char* password = "pomidorka38";
-const uint32_t interval = 60000; // 60 секунд
+const int timeDelay = 60000;
 
-#define VBAT_PIN 34
-#define SENSOR_ID 10
+#define DHTPIN 25
+#define DHTTYPE DHT22
+#define SENSOR_ID 1
 
-// Сервера (массив для совместимости)
+// Сервера (массив для совместимости с BME версией)
 const char* servers[] = {"192.168.10.100", "192.168.10.101"};
 const int SERVER_COUNT = 2;
 const int serverPort = 5000;
 const char* endpoint = "/data";
 
 // Глобальные переменные
+DHT dht(DHTPIN, DHTTYPE);
 WiFiClient wifiClient;
 String sessionPUID;
 
@@ -35,8 +38,7 @@ bool sendToServer(const char* host, const String& json) {
   Serial.print("  → ");
   Serial.print(host);
   
-  http.setTimeout(2000);
-  if (http.begin(url)) {
+  if (http.begin(wifiClient, url)) {
     http.addHeader("Content-Type", "application/json");
     int code = http.POST(json);
     Serial.print(" [");
@@ -51,18 +53,20 @@ bool sendToServer(const char* host, const String& json) {
 }
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("\n=== ESP32 Mock Sensor Logger ===");
-
-  // ADC настройки
-  analogReadResolution(12);
-  analogSetAttenuation(ADC_11db);
+  Serial.begin(9600);
+  delay(2000);
+  Serial.flush();
+  
+  Serial.println("\n=== ESP32 DHT22 Logger ===");
 
   // PUID сессии
   sessionPUID = generateSessionPUID();
   Serial.print("Session PUID: ");
   Serial.println(sessionPUID);
+
+  // DHT
+  dht.begin();
+  Serial.println("✓ DHT22 инициализирован");
 
   // Wi-Fi
   Serial.print("Wi-Fi: ");
@@ -79,35 +83,43 @@ void loop() {
   // Переподключение Wi-Fi
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("\n⚠ Wi-Fi reconnect...");
-    WiFi.disconnect();
-    WiFi.begin(ssid, password);
+    WiFi.reconnect();
     delay(5000);
-    if (WiFi.status() != WL_CONNECTED) {
-      delay(interval);
+    return;
+  }
+
+  // Чтение данных
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  // Если ошибка — пробуем ещё раз (DHT22 медленный)
+  if (isnan(temperature) || isnan(humidity)) {
+    delay(2000);
+    temperature = dht.readTemperature();
+    humidity = dht.readHumidity();
+    
+    if (isnan(temperature) || isnan(humidity)) {
+      Serial.println("✗ DHT read error");
+      delay(2000);
       return;
     }
   }
-  
-  float temp = 50.0;
-  float hum = 50.0;
-
-  Serial.printf("Mock: T=%.1f, H=%.1f, V=%.2f\n", temp, hum);
 
   // JSON: puid+ts в одном поле, без лишней запятой
   String json = "{"
                 "\"puid\":\"" + sessionPUID + "-" + String(millis()) + "\","
                 "\"sensor_id\":" + String(SENSOR_ID) + ","
-                "\"temperature\":" + String(temp, 1) + ","
-                "\"humidity\":" + String(hum, 1) 
+                "\"temperature\":" + String(temperature, 1) + ","
+                "\"humidity\":" + String(humidity, 1) +
                 "}";
 
-  Serial.println("→ Payload: " + json);
+  Serial.println("\n→ Payload: " + json);
 
   // Отправка на все сервера
   for (int i = 0; i < SERVER_COUNT; i++) {
     sendToServer(servers[i], json);
-    delay(100);
+    delay(100);  // пауза между запросами
   }
 
-  delay(interval);
+  delay(timeDelay);
 }

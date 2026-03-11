@@ -9,6 +9,7 @@ import threading
 import os
 from dotenv import load_dotenv
 import socket
+import uuid
 
 # Загрузка переменных окружения из .env файла
 load_dotenv()
@@ -64,6 +65,11 @@ def forward_data(data):
     except Exception as e:
         print(f"❌ Ошибка пересылки на {FORWARD_URL}: {e}")
 
+
+def generate_puid():
+    """Генерирует UUID v4 в формате XX...XX-XX...XX (16 hex)"""
+    u = uuid.uuid4()
+    return f"{u.hex[:8]}-{u.hex[8:]}"
 @app.route('/data', methods=['POST'])
 def receive_data():
     """Приём данных от датчиков"""
@@ -106,7 +112,9 @@ def receive_data():
             raise e
         finally:
             session.close()
-        
+        if data.get("puid") is None:
+            data = {**data, "puid": generate_puid()}
+
         data_with_ip = {**data, "source_ip": source_ip, "destination_ip": destination_ip}
         print(data_with_ip)
         threading.Thread(target=forward_data, args=(data_with_ip,), daemon=True).start()
@@ -140,38 +148,38 @@ def health_check():
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
-@app.route('/stats', methods=['GET'])
-def stats():
-    """Статистика по датчикам"""
-    try:
-        session = Session()
-        result = session.execute("""
-            SELECT 
-                sensor_id,
-                COUNT(*) as readings_count,
-                ROUND(AVG(temperature), 2) as avg_temp,
-                ROUND(AVG(humidity), 2) as avg_humidity,
-                ROUND(AVG(voltage), 2) as avg_voltage,
-                MAX(timestamp) as last_reading
-            FROM sensor_readings
-            GROUP BY sensor_id
-            ORDER BY sensor_id
-        """)
-        stats_data = []
-        for row in result:
-            stats_data.append({
-                "sensor_id": row[0],
-                "readings_count": row[1],
-                "avg_temperature": row[2],
-                "avg_humidity": row[3],
-                "avg_voltage": row[4],
-                "last_reading": row[5].isoformat() if row[5] else None
-            })
-        session.close()
+# @app.route('/stats', methods=['GET'])
+# def stats():
+#     """Статистика по датчикам"""
+#     try:
+#         session = Session()
+#         result = session.execute("""
+#             SELECT 
+#                 sensor_id,
+#                 COUNT(*) as readings_count,
+#                 ROUND(AVG(temperature), 2) as avg_temp,
+#                 ROUND(AVG(humidity), 2) as avg_humidity,
+#                 ROUND(AVG(voltage), 2) as avg_voltage,
+#                 MAX(timestamp) as last_reading
+#             FROM sensor_readings
+#             GROUP BY sensor_id
+#             ORDER BY sensor_id
+#         """)
+#         stats_data = []
+#         for row in result:
+#             stats_data.append({
+#                 "sensor_id": row[0],
+#                 "readings_count": row[1],
+#                 "avg_temperature": row[2],
+#                 "avg_humidity": row[3],
+#                 "avg_voltage": row[4],
+#                 "last_reading": row[5].isoformat() if row[5] else None
+#             })
+#         session.close()
         
-        return jsonify(stats_data), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+#         return jsonify(stats_data), 200
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     print(f"🚀 Запуск сервера на {APP_HOST}:{APP_PORT}")
