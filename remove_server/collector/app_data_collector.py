@@ -43,8 +43,8 @@ class SensorReading(Base):
     sensor_id = Column(Integer, nullable=False)
     temperature = Column(Float)
     humidity = Column(Float)
-    voltage = Column(Float)
-    ip_address = Column(String(50))
+    source_ip = Column(String(50))
+    destination_ip = Column(String(50))
 
 # Создание таблиц
 Base.metadata.create_all(engine)
