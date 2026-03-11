@@ -5,9 +5,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY server.py .
-COPY init.sql .
+COPY app_data_collector.py .
+#COPY init.sql .
 
 EXPOSE 5000
 
-CMD ["python", "server.py"]
+CMD ["python", "app_data_collector.py"]

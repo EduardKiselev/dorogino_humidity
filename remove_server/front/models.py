@@ -14,7 +14,8 @@ class SensorReading(db.Model):
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
     voltage = db.Column(db.Float)
-    ip_address = db.Column(db.String(50))
+    source_ip = db.Column(db.String(50))
+    destination_ip = db.Column(db.String(50))
     
     def to_dict(self):
         return {
@@ -23,8 +24,8 @@ class SensorReading(db.Model):
             'sensor_id': self.sensor_id,
             'temperature': self.temperature,
             'humidity': self.humidity,
-            'voltage': self.voltage,
-            'ip_address': self.ip_address
+            'source_ip': self.source_ip,
+            'destination_ip': self.destination_ip
         }
 
 class Setting(db.Model):
