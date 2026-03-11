@@ -8,6 +8,7 @@ import requests
 import threading
 import os
 from dotenv import load_dotenv
+import socket
 
 # Загрузка переменных окружения из .env файла
 load_dotenv()
@@ -70,10 +71,12 @@ def receive_data():
     try:
         data = request.get_json()
         timestamp = datetime.now()
-        print(timestamp)
-        ip_address = request.remote_addr
         
-        print(f"📡 [{timestamp}] {ip_address} -> {data}")
+
+        source_ip = request.remote_addr
+        destination_ip = request.environ.get('SERVER_ADDR') or socket.gethostbyname(request.host.split(':')[0])
+        
+        print(f"📡 [{timestamp}] {source_ip} -> {destination_ip} : {data}")
         
         # Валидация данных
         if not isinstance(data, dict):
@@ -92,7 +95,7 @@ def receive_data():
                 temperature=float(data.get('temperature')) if data.get('temperature') is not None else None,
                 humidity=float(data.get('humidity')) if data.get('humidity') is not None else None,
                 voltage=float(data.get('voltage')) if data.get('voltage') is not None else None,
-                ip_address=ip_address
+                source_ip=source_ip
             )
             session.add(db_record)
             session.commit()
@@ -104,9 +107,9 @@ def receive_data():
         finally:
             session.close()
         
-        data_with_ip = {**data, "ip_address": ip_address}
+        data_with_ip = {**data, "source_ip": source_ip, "destination_ip": destination_ip}
         print(data_with_ip)
-        forward_data(data_with_ip)
+        threading.Thread(target=forward_data, args=(data_with_ip,), daemon=True).start()
         
         return jsonify({
             "status": "ok",
