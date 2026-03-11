@@ -13,7 +13,7 @@ class SensorReading(db.Model):
     sensor_id = db.Column(db.Integer, nullable=False, index=True)
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
-    voltage = db.Column(db.Float)
+    puid = db.Column(db.String(64))
     source_ip = db.Column(db.String(50))
     destination_ip = db.Column(db.String(50))
     
