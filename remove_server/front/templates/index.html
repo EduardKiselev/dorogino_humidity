@@ -39,13 +39,7 @@
                         -
                     {% endif %}
                 </td>
-                <td>
-                    {% if reading.source_ip is not none %}
-                        {{ "%.2f"|format(reading.source_ip) }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
+                <td>{{ reading.source_ip or '-' }}</td>
                 <td>{{ reading.destination_ip or '-' }}</td>
             </tr>
             {% endfor %}
