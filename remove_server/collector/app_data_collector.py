@@ -124,44 +124,44 @@ def receive_data():
         print(f"❌ Ошибка: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/get_data/<int:sensor_id>', methods=['GET'])
-def get_data_by_sensor(sensor_id):
-    """Получение последних 10 записей конкретного датчика"""
-    try:
-        limit = int(request.args.get('limit', 10))
-        limit = min(limit, 100)
+# @app.route('/get_data/<int:sensor_id>', methods=['GET'])
+# def get_data_by_sensor(sensor_id):
+#     """Получение последних 10 записей конкретного датчика"""
+#     try:
+#         limit = int(request.args.get('limit', 10))
+#         limit = min(limit, 100)
         
-        session = Session()
-        result = session.query(SensorReading).filter(
-            SensorReading.sensor_id == sensor_id
-        ).order_by(
-            SensorReading.timestamp.desc()
-        ).limit(limit).all()
+#         session = Session()
+#         result = session.query(SensorReading).filter(
+#             SensorReading.sensor_id == sensor_id
+#         ).order_by(
+#             SensorReading.timestamp.desc()
+#         ).limit(limit).all()
         
-        data = []
-        for record in result:
-            data.append({
-                "id": record.id,
-                "timestamp": record.timestamp.isoformat(),
-                "sensor_id": record.sensor_id,
-                "temperature": record.temperature,
-                "humidity": record.humidity,
-                "voltage": record.voltage,
-                "ip_address": record.ip_address
-            })
+#         data = []
+#         for record in result:
+#             data.append({
+#                 "id": record.id,
+#                 "timestamp": record.timestamp.isoformat(),
+#                 "sensor_id": record.sensor_id,
+#                 "temperature": record.temperature,
+#                 "humidity": record.humidity,
+#                 "voltage": record.voltage,
+#                 "ip_address": record.ip_address
+#             })
         
-        session.close()
+#         session.close()
         
-        return jsonify({
-            "status": "ok",
-            "sensor_id": sensor_id,
-            "count": len(data),
-            "data": data
-        }), 200
+#         return jsonify({
+#             "status": "ok",
+#             "sensor_id": sensor_id,
+#             "count": len(data),
+#             "data": data
+#         }), 200
         
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+#     except Exception as e:
+#         print(f"❌ Ошибка: {e}")
+#         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -174,40 +174,40 @@ def health_check():
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
-@app.route('/stats', methods=['GET'])
-def stats():
-    """Статистика по датчикам"""
-    try:
-        session = Session()
-        result = session.execute(text("""
-            SELECT 
-                sensor_id,
-                COUNT(*) as readings_count,
-                ROUND(AVG(temperature), 2) as avg_temp,
-                ROUND(AVG(humidity), 2) as avg_humidity,
-                ROUND(AVG(voltage), 2) as avg_voltage,
-                MAX(timestamp) as last_reading
-            FROM sensor_readings
-            GROUP BY sensor_id
-            ORDER BY sensor_id
-        """))
+# @app.route('/stats', methods=['GET'])
+# def stats():
+#     """Статистика по датчикам"""
+#     try:
+#         session = Session()
+#         result = session.execute(text("""
+#             SELECT 
+#                 sensor_id,
+#                 COUNT(*) as readings_count,
+#                 ROUND(AVG(temperature), 2) as avg_temp,
+#                 ROUND(AVG(humidity), 2) as avg_humidity,
+#                 ROUND(AVG(voltage), 2) as avg_voltage,
+#                 MAX(timestamp) as last_reading
+#             FROM sensor_readings
+#             GROUP BY sensor_id
+#             ORDER BY sensor_id
+#         """))
         
-        stats_data = []
-        for row in result:
-            stats_data.append({
-                "sensor_id": row[0],
-                "readings_count": row[1],
-                "avg_temperature": row[2],
-                "avg_humidity": row[3],
-                "avg_voltage": row[4],
-                "last_reading": row[5].isoformat() if row[5] else None
-            })
+#         stats_data = []
+#         for row in result:
+#             stats_data.append({
+#                 "sensor_id": row[0],
+#                 "readings_count": row[1],
+#                 "avg_temperature": row[2],
+#                 "avg_humidity": row[3],
+#                 "avg_voltage": row[4],
+#                 "last_reading": row[5].isoformat() if row[5] else None
+#             })
         
-        session.close()
+#         session.close()
         
-        return jsonify(stats_data), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+#         return jsonify(stats_data), 200
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route('/settings/<int:sensor_id>/<int:hour>', methods=['GET'])
