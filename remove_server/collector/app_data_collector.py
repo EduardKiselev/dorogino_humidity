@@ -45,6 +45,7 @@ class SensorReading(Base):
     humidity = Column(Float)
     source_ip = Column(String(50))
     destination_ip = Column(String(50))
+    puid = Column(String(20))
 
 # Создание таблиц
 Base.metadata.create_all(engine)
@@ -58,6 +59,7 @@ def receive_data():
         data = request.get_json()
         timestamp = datetime.now(nsk_tz).replace(tzinfo=None)
         ip_address = data.get('ip_address')
+        puid = str(data.get('puid'))
         
         print(f"REMOTE SERVER COLLECTOR: [{timestamp}] from sensor ip {ip_address} -> {data}")
         
@@ -76,11 +78,12 @@ def receive_data():
             "humidity": float(data.get('humidity')) if data.get('humidity') is not None else None,
             "source_ip": str(data.get('source_ip')) if data.get('source_ip') is not None else None,
             "destination_ip": str(data.get('destination_ip')) if data.get('destination_ip') is not None else None,
+            "puid": puid if data.get('puid') is not None else None
             
         }
 
         stmt = insert(SensorReading).values(**values)
-        stmt = stmt.on_conflict_do_nothing(index_elements=['timestamp', 'sensor_id']).returning(SensorReading.id)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['puid']).returning(SensorReading.id)
         
         # Запись в БД
         session = Session()
@@ -94,8 +97,8 @@ def receive_data():
             else:
                 # Дубликат: находим существующий ID
                 existing = session.execute(
-                    text("SELECT id FROM sensor_readings WHERE timestamp = :ts AND sensor_id = :sid"),
-                    {"ts": timestamp, "sid": sensor_id}
+                    text("SELECT id FROM sensor_readings WHERE puid = :puid "),
+                    {"puid": puid}
                 ).fetchone()
                 record_id = existing[0] if existing else None
         except Exception as e:
@@ -107,6 +110,7 @@ def receive_data():
         
         return jsonify({
             "status": "ok",
+            "puid": puid,
             "id": record_id,
             "timestamp": timestamp.isoformat(),
             "sensor_id": sensor_id,
