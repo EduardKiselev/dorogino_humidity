@@ -90,7 +90,7 @@ def index():
 @app.route('/charts')
 def charts():
     """Страница графиков"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
     
     # Получаем все данные за разные периоды
     day_ago = now - timedelta(days=1)
