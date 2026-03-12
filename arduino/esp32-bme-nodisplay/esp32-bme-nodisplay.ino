@@ -10,7 +10,7 @@ const char* ssid = "ElSenorNegro";
 const char* password = "pomidorka38";
 const int timeDelay = 60000;
 
-#define SENSOR_ID 3
+#define SENSOR_ID 4
 #define I2C_SDA 21
 #define I2C_SCL 22
 
@@ -127,7 +127,7 @@ void loop() {
                 "\"sensor_id\":" + String(SENSOR_ID) + ","
                 "\"temperature\":" + String(t, 1) + ","
                 "\"humidity\":" + String(h, 1) + ","
-                "\"pressure\":" + String(p, 1)
+                "\"pressure\":" + String(p, 1) +
                 "}";
 
   Serial.println("\n→ Payload: " + json);
