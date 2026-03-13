@@ -89,6 +89,7 @@ def get_sensor_status():
             status = 'error'  # red
         
         sensors_status[sensor_id] = {
+            'sensor_id': sensor_id,
             'status': status,
             'last_seen': last_timestamp
         }
