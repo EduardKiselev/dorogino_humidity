@@ -23,14 +23,21 @@
                     <td>{{ sensor_id }}</td>
                     <td>
                         {% set status = sensor_info.status %}
-                        <span class="status-indicator 
-                            {% if status == 'active' %}status-active
-                            {% elif status == 'warning' %}status-warning
-                            {% else %}status-error{% endif %}">
+                        <!-- Adding visual color indicator badge -->
+                        <span class="badge 
+                            {% if status == 'active' %}bg-success
+                            {% elif status == 'warning' %}bg-warning
+                            {% else %}bg-danger{% endif %}">
+                            {% if status == 'active' %}Активен
+                            {% elif status == 'warning' %}Предупреждение
+                            {% else %}Не активен{% endif %}
                         </span>
-                        {% if status == 'active' %}Активен (менее 5 мин)
-                        {% elif status == 'warning' %}Предупреждение (5 мин - 1 ч)
-                        {% else %}Не активен (более 1 ч){% endif %}
+                        <br>
+                        <small class="text-muted">
+                            {% if status == 'active' %}(менее 5 мин)
+                            {% elif status == 'warning' %}(5 мин - 1 ч)
+                            {% else %}(более 1 ч){% endif %}
+                        </small>
                     </td>
                     <td>
                         {{ sensor_info.last_seen.strftime('%Y-%m-%d %H:%M:%S') }}
