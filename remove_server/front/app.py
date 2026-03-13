@@ -47,14 +47,12 @@ def log_setting_change(sensor_id, hour_of_day, humidity, histeresys_up, histeres
     db.session.add(log_entry)
 
 def ping_host(host):
-    """Проверяет доступность хоста с помощью ping"""
+    """Проверяет доступность хоста с помощью запроса к /health эндпоинту"""
+    import requests
     try:
-        # Use subprocess to ping the host
-        result = subprocess.run(['ping', '-c', '1', '-W', '3', host], 
-                                stdout=subprocess.DEVNULL, 
-                                stderr=subprocess.DEVNULL, 
-                                check=False)
-        return result.returncode == 0
+        # Use HTTP GET request to check the /health endpoint on port 5000
+        response = requests.get(f"http://{host}:5000/health", timeout=3)
+        return response.status_code == 200
     except Exception:
         return False
 
