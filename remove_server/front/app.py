@@ -42,7 +42,7 @@ def log_setting_change(sensor_id, hour_of_day, humidity, histeresys_up, histeres
         humidity=humidity,
         histeresys_up=histeresys_up,
         histeresys_down=histeresys_down,
-        timestamp=datetime.now(timezone.utc)
+        timestamp=datetime.now(target_tz)
     )
     db.session.add(log_entry)
 
@@ -60,7 +60,7 @@ def ping_host(host):
 
 def get_sensor_status():
     """Определяет статусы датчиков на основе времени последнего сигнала"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(target_tz)
     five_minutes_ago = now - timedelta(minutes=5)
     one_hour_ago = now - timedelta(hours=1)
     
@@ -77,6 +77,10 @@ def get_sensor_status():
     
     sensors_status = {}
     for sensor_id, last_timestamp in latest_readings:
+        # Make sure last_timestamp is timezone-aware for comparison
+        if last_timestamp.tzinfo is None:
+            last_timestamp = last_timestamp.replace(tzinfo=timezone.utc)
+        
         if last_timestamp >= five_minutes_ago:
             status = 'active'  # green
         elif last_timestamp >= one_hour_ago:
