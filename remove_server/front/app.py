@@ -52,6 +52,7 @@ def ping_host(host):
     try:
         # Use HTTP GET request to check the /health endpoint on port 5000
         response = requests.get(f"http://{host}:5000/health", timeout=3)
+        print(response.status_code)
         return response.status_code == 200
     except Exception:
         return False
