@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 import socket
 import uuid
+from sqlalchemy import text
 
 # Загрузка переменных окружения из .env файла
 load_dotenv()
@@ -138,7 +139,7 @@ def health_check():
     """Проверка работоспособности"""
     try:
         session = Session()
-        session.execute("SELECT 1")
+        session.execute(text("SELECT 1"))
         session.close()
         return jsonify({
             "status": "healthy",
