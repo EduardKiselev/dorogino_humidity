@@ -97,22 +97,6 @@
                             </td>
                         </tr>
                         {% endfor %}
-                        
-                        <!-- Add rows for sensors without data -->
-                        {% for sensor_id in range(1, 6) %}
-                            {% if sensor_id not in sensors_status %}
-                            <tr>
-                                <td>{{ sensor_id }}</td>
-                                <td>
-                                    <span class="status-indicator status-error"></span>
-                                    Нет данных
-                                </td>
-                                <td>
-                                    Нет данных
-                                </td>
-                            </tr>
-                            {% endif %}
-                        {% endfor %}
                     </tbody>
                 </table>
             </div>

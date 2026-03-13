@@ -207,7 +207,7 @@ def monitoring():
     # Проверяем статус серверов
     server_10_2_status = ping_host('10.0.10.2')
     server_10_3_status = ping_host('10.0.10.3')
-    
+    print(server_10_2_status, server_10_3_status)
     servers_status = {
         '10.0.10.2': server_10_2_status,
         '10.0.10.3': server_10_3_status
