@@ -50,13 +50,13 @@
         <!-- Navigation -->
         <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#">Система контроля влажности</a>
+                <a class="navbar-brand" href="{{ url_for('index') }}">Система контроля влажности</a>
                 <div class="navbar-nav">
                     <a class="nav-link" href="{{ url_for('index') }}">Главная</a>
                     <a class="nav-link" href="{{ url_for('charts') }}">Графики</a>
                     {% if is_admin %}
                         <a class="nav-link" href="{{ url_for('settings') }}">Настройки</a>
-                        <a class="nav-link" href="{{ url_for('monitoring') }}">Мониторинг</a>
+                        <a class="nav-link active" href="{{ url_for('monitoring') }}">Мониторинг</a>
                         <a class="nav-link" href="{{ url_for('logout') }}">Выход</a>
                     {% endif %}
                 </div>
