@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.background import BackgroundScheduler
 import requests
 from threading import Lock
+import subprocess
 
 # Global scheduler instance
 scheduler = None
@@ -44,6 +45,51 @@ def log_setting_change(sensor_id, hour_of_day, humidity, histeresys_up, histeres
         timestamp=datetime.now(timezone.utc)
     )
     db.session.add(log_entry)
+
+def ping_host(host):
+    """Проверяет доступность хоста с помощью ping"""
+    try:
+        # Use subprocess to ping the host
+        result = subprocess.run(['ping', '-c', '1', '-W', '3', host], 
+                                stdout=subprocess.DEVNULL, 
+                                stderr=subprocess.DEVNULL, 
+                                check=False)
+        return result.returncode == 0
+    except Exception:
+        return False
+
+def get_sensor_status():
+    """Определяет статусы датчиков на основе времени последнего сигнала"""
+    now = datetime.now(timezone.utc)
+    five_minutes_ago = now - timedelta(minutes=5)
+    one_hour_ago = now - timedelta(hours=1)
+    
+    # Get the latest reading for each sensor
+    subquery = db.session.query(
+        SensorReading.sensor_id,
+        db.func.max(SensorReading.timestamp).label('max_time')
+    ).group_by(SensorReading.sensor_id).subquery()
+    
+    latest_readings = db.session.query(
+        subquery.c.sensor_id,
+        subquery.c.max_time
+    ).all()
+    
+    sensors_status = {}
+    for sensor_id, last_timestamp in latest_readings:
+        if last_timestamp >= five_minutes_ago:
+            status = 'active'  # green
+        elif last_timestamp >= one_hour_ago:
+            status = 'warning'  # yellow
+        else:
+            status = 'error'  # red
+        
+        sensors_status[sensor_id] = {
+            'status': status,
+            'last_seen': last_timestamp
+        }
+    
+    return sensors_status
 
 # === Роуты ===
 
@@ -149,6 +195,28 @@ def charts():
         is_admin=session.get('is_admin')
     )
 
+@app.route('/monitoring')
+def monitoring():
+    """Страница мониторинга состояния датчиков и серверов"""
+    # Получаем статусы датчиков
+    sensors_status = get_sensor_status()
+    
+    # Проверяем статус серверов
+    server_10_2_status = ping_host('10.0.10.2')
+    server_10_3_status = ping_host('10.0.10.3')
+    
+    servers_status = {
+        '10.0.10.2': server_10_2_status,
+        '10.0.10.3': server_10_3_status
+    }
+    
+    return render_template(
+        'monitoring.html',
+        sensors_status=sensors_status,
+        servers_status=servers_status,
+        is_admin=session.get('is_admin')
+    )
+
 @app.route('/settings', methods=['GET', 'POST'])
 @admin_required
 def settings():
@@ -195,17 +263,26 @@ def settings():
                             current_setting.histeresys_up = histeresys_up
                             current_setting.histeresys_down = histeresys_down
                             current_setting.timestamp = datetime.now(timezone.utc)
-                            #   db.session.merge(current_setting)
                     else:
-                        # Создаем новую запись с настройками
-                        new_setting = Setting(
+                        # Используем UPSERT для обработки возможного конфликта уникальности
+                        stmt = db.insert(Setting).values(
                             sensor_id=sensor_id,
                             hour_of_day=hour,
                             humidity=humidity,
                             histeresys_up=histeresys_up,
-                            histeresys_down=histeresys_down
+                            histeresys_down=histeresys_down,
+                            timestamp=datetime.now(timezone.utc)
                         )
-                        db.session.add(new_setting)
+                        stmt = stmt.on_conflict_do_update(
+                            index_elements=['sensor_id', 'hour_of_day'],
+                            set_=dict(
+                                humidity=stmt.excluded.humidity,
+                                histeresys_up=stmt.excluded.histeresys_up,
+                                histeresys_down=stmt.excluded.histeresys_down,
+                                timestamp=stmt.excluded.timestamp
+                            )
+                        )
+                        db.session.execute(stmt)
             
             db.session.commit()
             flash('Настройки для всех датчиков и часов успешно сохранены!', 'success')
