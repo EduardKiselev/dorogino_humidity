@@ -78,7 +78,7 @@ def get_sensor_status():
     for sensor_id, last_timestamp in latest_readings:
         # Make sure last_timestamp is timezone-aware for comparison
         if last_timestamp.tzinfo is None:
-            last_timestamp = last_timestamp.replace(tzinfo=timezone.utc)
+            last_timestamp = last_timestamp.replace(tzinfo=target_tz)
         
         if last_timestamp >= five_minutes_ago:
             status = 'active'  # green
