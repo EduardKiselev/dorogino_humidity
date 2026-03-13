@@ -74,7 +74,7 @@ def get_sensor_status():
         subquery.c.sensor_id,
         subquery.c.max_time
     ).all()
-    
+    print(latest_readings)
     sensors_status = {}
     for sensor_id, last_timestamp in latest_readings:
         # Make sure last_timestamp is timezone-aware for comparison
