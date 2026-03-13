@@ -32,12 +32,12 @@
                             {% elif status == 'warning' %}Предупреждение
                             {% else %}Не активен{% endif %}
                         </span>
-                        <br>
-                        <small class="text-muted">
+            
+                        <!-- <small class="text-muted">
                             {% if status == 'active' %}(менее 5 мин)
                             {% elif status == 'warning' %}(5 мин - 1 ч)
                             {% else %}(более 1 ч){% endif %}
-                        </small>
+                        </small> -->
                     </td>
                     <td>
                         {{ sensor_info.last_seen.strftime('%Y-%m-%d %H:%M:%S') }}
