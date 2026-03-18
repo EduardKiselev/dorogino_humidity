@@ -6,15 +6,15 @@
 #include "esp_system.h"
 
 // === НАСТРОЙКИ ===
-const char* ssid = "ElSenorNegro";
-const char* password = "pomidorka38";
+const char* ssid = "ELTEX-8478";
+const char* password = "GP21371842";
 const int timeDelay = 60000;
 
 #define SENSOR_ID 4
-#define I2C_SDA 21
-#define I2C_SCL 22
+#define I2C_SDA 32
+#define I2C_SCL 33
 
-const char* servers[] = {"192.168.10.100", "192.168.10.101"};
+const char* servers[] = {"192.168.1.100", "192.168.1.101"};
 const int SERVER_COUNT = 2;
 const int serverPort = 5000;
 const char* endpoint = "/data";
