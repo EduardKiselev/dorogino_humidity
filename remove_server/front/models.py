@@ -93,3 +93,11 @@ class ControllerStatus(db.Model):
             'status': self.status,
             'last_updated': self.last_updated.isoformat()
         }
+
+class ScreenRecord(db.Model):
+    __tablename__ = 'screen_records'
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), unique=True, nullable=False)
+    screen_date = db.Column(db.DateTime, nullable=False, index=True)
+    parsed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    data_json = db.Column(db.Text)  # JSON строка

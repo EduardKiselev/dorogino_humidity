@@ -15,6 +15,7 @@
                 <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Последние данные</a>
                 <a class="nav-link {% if request.endpoint == 'charts' %}active{% endif %}" href="{{ url_for('charts') }}">Графики</a>
                 <a class="nav-link {% if request.endpoint == 'monitoring' %}active{% endif %}" href="{{ url_for('monitoring') }}">Мониторинг</a>
+                <a class="nav-link {% if request.endpoint == 'kiln_stats' %}active{% endif %}" href="{{ url_for('kiln_stats') }}">📊 Статистика печи</a>
                 {% if is_admin %}
                     <a class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}">Настройки</a>
                     <a class="nav-link" href="{{ url_for('logout') }}">Выход</a>

@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from config import Config
-from models import db, SensorReading, Setting, SettingChangeLog, ControllerStatus
+from models import db, SensorReading, Setting, SettingChangeLog, ControllerStatus, ScreenRecord
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 from zoneinfo import ZoneInfo
@@ -9,6 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import requests
 from threading import Lock
 import subprocess
+import json
 
 # Global scheduler instance
 scheduler = None
@@ -135,6 +136,57 @@ def index():
         'index.html', 
         readings=readings, 
         is_admin=session.get('is_admin')
+    )
+
+@app.route('/kiln-stats')
+def kiln_stats():
+    # Даты из запроса
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    
+    # Значения по умолчанию: последние 24 часа
+    now = datetime.now(target_tz)
+    if not date_from and not date_to:
+        date_to_dt = now
+        date_from_dt = now - timedelta(hours=24)
+    else:
+        # Парсинг с учётом таймзоны
+        date_from_dt = None
+        date_to_dt = None
+        if date_from:
+            date_from_dt = datetime.fromisoformat(date_from)
+            if date_from_dt.tzinfo is None:
+                date_from_dt = date_from_dt.replace(tzinfo=target_tz)
+        if date_to:
+            date_to_dt = datetime.fromisoformat(date_to)
+            if date_to_dt.tzinfo is None:
+                date_to_dt = date_to_dt.replace(tzinfo=target_tz)
+    
+    query = ScreenRecord.query
+    if date_from_dt:
+        query = query.filter(ScreenRecord.screen_date >= date_from_dt)
+    if date_to_dt:
+        query = query.filter(ScreenRecord.screen_date <= date_to_dt)
+    
+    rows = query.order_by(ScreenRecord.screen_date.desc()).limit(500).all()
+    records = []
+    for row in rows:
+        try:
+            data_list = json.loads(row.data_json) if row.data_json else []
+        except (json.JSONDecodeError, TypeError):
+            data_list = []
+        records.append({
+            "filename": row.filename,
+            "screen_date": row.screen_date,
+            "data_list": data_list
+        })
+    
+    return render_template(
+        'kiln_stats.html',
+        records=records,
+        date_from=date_from or (date_from_dt.strftime('%Y-%m-%dT%H:%M') if date_from_dt else ''),
+        date_to=date_to or (date_to_dt.strftime('%Y-%m-%dT%H:%M') if date_to_dt else ''),
+        is_admin=session.get('is_admin')  # ← важно для base.html
     )
 
 @app.route('/charts')
