@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, abort
 from config import Config
 from models import db, SensorReading, Setting, SettingChangeLog, ControllerStatus, ScreenRecord
 from datetime import datetime, timezone, timedelta
@@ -10,6 +10,7 @@ import requests
 from threading import Lock
 import subprocess
 import json
+import os
 
 # Global scheduler instance
 scheduler = None
@@ -188,6 +189,20 @@ def kiln_stats():
         date_to=date_to or (date_to_dt.strftime('%Y-%m-%dT%H:%M') if date_to_dt else ''),
         is_admin=session.get('is_admin')  # ← важно для base.html
     )
+
+@app.route('/screens/<path:filename>')
+def serve_screen(filename):
+    """Безопасная отдача скриншотов только из разрешённой папки"""
+    # Защита от path traversal
+    if '..' in filename or filename.startswith('/'):
+        abort(403)
+    # Разрешаем только .png
+    if not filename.lower().endswith('.png'):
+        abort(403)
+    # Проверяем, что файл существует
+    if not os.path.isfile(os.path.join(SCREEN_DIR, filename)):
+        abort(404)
+    return send_from_directory(SCREEN_DIR, filename)
 
 # @app.route('/kiln-stats/export')
 # def kiln_stats_export():

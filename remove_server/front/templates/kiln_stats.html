@@ -29,7 +29,6 @@
 </div>
 
 {% if records %}
-<!-- Внутри {% if records %} ... {% endif %} -->
 <div class="table-responsive">
     <table class="table table-striped table-hover table-sm">
         <thead class="table-dark">
@@ -50,9 +49,22 @@
                 {% for row in rec.data_list %}
                 <tr>
                     {% if loop.first %}
-                    <!-- Первая строка: показываем время и имя файла -->
-                    <td rowspan="{{ rec.data_list|length }}">{{ rec.screen_date.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td rowspan="{{ rec.data_list|length }}"><small class="text-muted">{{ rec.filename }}</small></td>
+                    <!-- Первая строка: время + кликабельное имя файла -->
+                    <td rowspan="{{ rec.data_list|length }}">
+                        {{ rec.screen_date.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
+                    <td rowspan="{{ rec.data_list|length }}">
+                        <a href="#" 
+                           class="text-decoration-none" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#image-modal"
+                           data-image-url="{{ url_for('serve_screen', filename=rec.filename) }}"
+                           data-image-name="{{ rec.filename }}">
+                            <small class="text-primary">
+                                🖼️ {{ rec.filename }}
+                            </small>
+                        </a>
+                    </td>
                     {% endif %}
                     <td>{{ loop.index }}</td>
                     <td>{{ row.get('ЗОНА', '–') }}</td>
@@ -71,5 +83,73 @@
         </tbody>
     </table>
 </div>
+
+<!-- Единое модальное окно для предпросмотра изображения -->
+<div class="modal fade" id="image-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="image-modal-title">Просмотр скриншота</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-light">
+                <div class="spinner-border text-primary" role="status" id="image-loading">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <img id="image-preview" 
+                     src="" 
+                     alt="Скриншот" 
+                     class="img-fluid rounded" 
+                     style="max-height: 70vh; display: none;"
+                     onload="document.getElementById('image-loading').style.display='none'; this.style.display='block';"
+                     onerror="document.getElementById('image-loading').style.display='none'; document.getElementById('image-error').style.display='block';">
+                <div id="image-error" class="alert alert-danger mt-3" style="display: none;">
+                    ❌ Не удалось загрузить изображение
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="image-download" 
+                   href="#" 
+                   class="btn btn-outline-primary btn-sm" 
+                   download
+                   target="_blank">
+                    ⬇️ Скачать оригинал
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для динамической подстановки изображения в модальное окно -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageModal = document.getElementById('image-modal');
+    imageModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const imageUrl = button.getAttribute('data-image-url');
+        const imageName = button.getAttribute('data-image-name');
+        
+        // Обновляем заголовок и ссылки
+        document.getElementById('image-modal-title').textContent = imageName;
+        document.getElementById('image-preview').src = imageUrl;
+        document.getElementById('image-preview').style.display = 'none';
+        document.getElementById('image-loading').style.display = 'inline-block';
+        document.getElementById('image-error').style.display = 'none';
+        document.getElementById('image-download').href = imageUrl;
+    });
+    
+    // Очистка при закрытии (чтобы не показывать старое изображение)
+    imageModal.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('image-preview').src = '';
+    });
+});
+</script>
+
+{% elif date_from or date_to %}
+<div class="alert alert-info">По вашему запросу ничего не найдено.</div>
+{% else %}
+<div class="alert alert-secondary">Выберите период и нажмите «Показать», чтобы увидеть данные.</div>
 {% endif %}
+
 {% endblock %}

@@ -65,6 +65,8 @@ services:
       - DEBUG=${DEBUG:-False}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-trololo}
       - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
+    volumes:
+      - /root/screen:/root/screen:ro  # ← Примонтируйте папку со скриншотами (read-only)
     restart: unless-stopped
 
   worker:
