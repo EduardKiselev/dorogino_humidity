@@ -180,7 +180,7 @@ def kiln_stats():
             "screen_date": row.screen_date,
             "data_list": data_list
         })
-    
+    print(records)
     return render_template(
         'kiln_stats.html',
         records=records,
