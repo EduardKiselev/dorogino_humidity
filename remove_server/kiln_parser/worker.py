@@ -31,29 +31,31 @@ def run():
     Base.metadata.create_all(engine)
     session = Session()
     
-    processed = {r[0] for r in session.query(ScreenRecord.filename).all()}
-    screen_dir = "/root/screen"
-    
-    for filename in os.listdir(screen_dir):
-        if not filename.endswith('.png') or filename in processed:
-            continue
-            
-        filepath = os.path.join(screen_dir, filename)
-        try:
-            data = parse_by_cells(filepath)  # Возвращает list[dict]
-            record = ScreenRecord(
-                filename=filename,
-                screen_date=get_date_from_filename(filename),
-                data_json=json.dumps(data, ensure_ascii=False)
-            )
-            session.add(record)
-            session.commit()
-            print(f"✓ Processed: {filename}")
-        except Exception as e:
-            session.rollback()
-            print(f"✗ Error {filename}: {e}")
-        finally:
-            session.close()
+    try:
+        processed = {r[0] for r in session.query(ScreenRecord.filename).all()}
+        screen_dir = "/root/screen"
+        
+        for filename in os.listdir(screen_dir):
+
+            if not filename.endswith('.png') or filename in processed:
+                continue
+                
+            filepath = os.path.join(screen_dir, filename)
+            try:
+                data = parse_by_cells(filepath)  # Возвращает list[dict]
+                record = ScreenRecord(
+                    filename=filename,
+                    screen_date=get_date_from_filename(filename),
+                    data_json=json.dumps(data, ensure_ascii=False)
+                )
+                session.add(record)
+                session.commit()
+                print(f"✓ Processed: {filename}")
+            except Exception as e:
+                session.rollback()
+                print(f"✗ Error {filename}: {e}")
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     run()
