@@ -17,7 +17,7 @@ class ScreenRecord(Base):
 
 # Подключение к БД
 DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres_userok:postgres_passwordok@db:5432/sensor_data")
-print(DB_URL)
+
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 
@@ -28,14 +28,13 @@ def get_date_from_filename(filename):
     return datetime.datetime.now()
 
 def run():
-    Base.metadata.create_all(engine)  # Создаст таблицу, если нет
+    Base.metadata.create_all(engine)
     session = Session()
     
     processed = {r[0] for r in session.query(ScreenRecord.filename).all()}
     screen_dir = "/root/screen"
     
     for filename in os.listdir(screen_dir):
-        print(os.listdir(screen_dir))
         if not filename.endswith('.png') or filename in processed:
             continue
             
