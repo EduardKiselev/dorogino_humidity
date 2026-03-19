@@ -20,6 +20,8 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
+SCREEN_DIR = os.getenv('SCREEN_DIR', '/root/screen')
+
 target_tz = ZoneInfo("Asia/Novosibirsk")
 
 # === Вспомогательные функции ===
