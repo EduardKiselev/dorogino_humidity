@@ -189,6 +189,36 @@ def kiln_stats():
         is_admin=session.get('is_admin')  # ← важно для base.html
     )
 
+# @app.route('/kiln-stats/export')
+# def kiln_stats_export():
+#     from flask import send_file
+#     import csv, io
+    
+#     # ... тот же код получения records, что в kiln_stats ...
+    
+#     # Генерация CSV
+#     output = io.StringIO()
+#     writer = csv.writer(output)
+#     writer.writerow(['screen_date', 'filename', 'row_num', 'ЗОНА', 'КТ', 'ПКТ', 'ИЗМ', 'ОШИБКА', 'ВЫКЛ'])
+    
+#     for rec in records:
+#         for idx, row in enumerate(rec.data_list, 1):
+#             writer.writerow([
+#                 rec.screen_date.strftime('%Y-%m-%d %H:%M:%S'),
+#                 rec.filename,
+#                 idx,
+#                 row.get('ЗОНА'), row.get('КТ'), row.get('ПКТ'),
+#                 row.get('ИЗМ'), row.get('ОШИБКА'), row.get('ВЫКЛ')
+#             ])
+    
+#     output.seek(0)
+#     return send_file(
+#         io.BytesIO(output.getvalue().encode('utf-8-sig')),
+#         mimetype='text/csv',
+#         as_attachment=True,
+#         download_name=f'kiln_stats_{datetime.now().strftime("%Y%m%d_%H%M")}.csv'
+#     )
+
 @app.route('/charts')
 def charts():
     """Страница графиков"""
