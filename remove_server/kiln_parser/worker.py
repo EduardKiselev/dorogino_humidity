@@ -11,9 +11,9 @@ class ScreenRecord(Base):
     __tablename__ = 'screen_records'
     id = Column(Integer, primary_key=True)
     filename = Column(String, unique=True, nullable=False)
-    screen_date = Column(DateTime, nullable=False)  # Из имени файла
+    screen_date = Column(DateTime, nullable=False) 
     parsed_at = Column(DateTime, default=datetime.datetime.utcnow)
-    data_json = Column(Text)  # JSON с результатами парсинга
+    data_json = Column(Text)
 
 # Подключение к БД
 DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/sensor_data")
@@ -34,6 +34,7 @@ def run():
     screen_dir = "/root/screen"
     
     for filename in os.listdir(screen_dir):
+        print(os.listdir(screen_dir))
         if not filename.endswith('.png') or filename in processed:
             continue
             
