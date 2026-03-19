@@ -16,7 +16,8 @@ class ScreenRecord(Base):
     data_json = Column(Text)
 
 # Подключение к БД
-DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/sensor_data")
+DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres12:postgres23@db:5432/sensor_data")
+print(DB_URL)
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 
