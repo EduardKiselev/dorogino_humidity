@@ -77,7 +77,7 @@ services:
       - ./worker_logs:/var/log/worker
     environment:
       - TZ=Asia/Novosibirsk
-      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-sensor_data}
+      - DATABASE_URL=postgresql://${DB_USER:-postgres_userok}:${DB_PASSWORD:-postgres_passwordok}@db:5432/${DB_NAME:-sensor_data}
     depends_on:
       - db
     networks:
