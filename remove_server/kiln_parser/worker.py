@@ -1,25 +1,39 @@
 # worker.py
-import os, re, datetime, json
-from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, Text
+import os
+import re
+import time
+import json
+import logging
+import datetime
+from sqlalchemy import create_engine, Column, Integer, DateTime, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from parser import parse_by_cells
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/var/log/worker/worker.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
 class ScreenRecord(Base):
     __tablename__ = 'screen_records'
     id = Column(Integer, primary_key=True)
-    filename = Column(String, unique=True, nullable=False)
-    screen_date = Column(DateTime, nullable=False) 
+    filename = Column(String, unique=True, nullable=False, index=True)
+    screen_date = Column(DateTime, nullable=False)
     parsed_at = Column(DateTime, default=datetime.datetime.utcnow)
     data_json = Column(Text)
 
-# Подключение к БД
 DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres_userok:postgres_passwordok@db:5432/sensor_data")
-
-engine = create_engine(DB_URL)
-Session = sessionmaker(bind=engine)
+SCREEN_DIR = os.getenv("SCREEN_DIR", "/root/screen")
+POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "60"))  # секунды
 
 def get_date_from_filename(filename):
     match = re.search(r"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})", filename)
@@ -27,22 +41,38 @@ def get_date_from_filename(filename):
         return datetime.datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
     return datetime.datetime.now()
 
-def run():
-    Base.metadata.create_all(engine)
+def process_new_files():
+    """Обрабатывает новые скриншоты за один цикл."""
+    engine = create_engine(DB_URL)
+    Session = sessionmaker(bind=engine)
     session = Session()
     
     try:
-        processed = {r[0] for r in session.query(ScreenRecord.filename).all()}
-        screen_dir = "/root/screen"
+        # Создаём таблицу, если нет (идемпотентно)
+        Base.metadata.create_all(engine)
         
-        for filename in os.listdir(screen_dir):
-
-            if not filename.endswith('.png') or filename in processed:
-                continue
-                
-            filepath = os.path.join(screen_dir, filename)
+        # Получаем множество уже обработанных имён
+        processed = {r[0] for r in session.query(ScreenRecord.filename).all()}
+        
+        if not os.path.isdir(SCREEN_DIR):
+            logger.warning(f"Directory not found: {SCREEN_DIR}")
+            return
+            
+        new_files = [
+            f for f in os.listdir(SCREEN_DIR)
+            if f.endswith('.png') and f not in processed
+        ]
+        
+        if not new_files:
+            logger.debug("No new files to process")
+            return
+            
+        logger.info(f"Found {len(new_files)} new file(s)")
+        
+        for filename in new_files:
+            filepath = os.path.join(SCREEN_DIR, filename)
             try:
-                data = parse_by_cells(filepath)  # Возвращает list[dict]
+                data = parse_by_cells(filepath)
                 record = ScreenRecord(
                     filename=filename,
                     screen_date=get_date_from_filename(filename),
@@ -50,12 +80,27 @@ def run():
                 )
                 session.add(record)
                 session.commit()
-                print(f"✓ Processed: {filename}")
+                logger.info(f"✓ Processed: {filename} ({len(data)} rows)")
             except Exception as e:
                 session.rollback()
-                print(f"✗ Error {filename}: {e}")
+                logger.error(f"✗ Error processing {filename}: {e}", exc_info=True)
+                
+    except Exception as e:
+        logger.error(f"Database error: {e}", exc_info=True)
     finally:
         session.close()
+        engine.dispose()  # Освобождаем соединения
+
+def main():
+    logger.info(f"Worker started. Polling {SCREEN_DIR} every {POLL_INTERVAL}s")
+    
+    while True:
+        try:
+            process_new_files()
+        except Exception as e:
+            logger.error(f"Unhandled error in main loop: {e}", exc_info=True)
+        
+        time.sleep(POLL_INTERVAL)
 
 if __name__ == "__main__":
-    run()
+    main()
