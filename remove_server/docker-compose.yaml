@@ -69,27 +69,27 @@ services:
       - /root/screen:/root/screen:ro  # ← Примонтируйте папку со скриншотами (read-only)
     restart: unless-stopped
 
-worker:
-  build:
-    context: ./kiln_parser
-    dockerfile: Dockerfile
-  container_name: screen_worker
-  volumes:
-    - /root/screen:/root/screen:ro
-  environment:
-    - TZ=Asia/Novosibirsk
-    - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-sensor_data}
-  depends_on:
-    - db
-  networks:
-    - app_network
-  restart: unless-stopped
-  # healthcheck можно оставить, но проверить python-процесс:
-  healthcheck:
-    test: ["CMD-SHELL", "pgrep -f 'python.*worker.py' || exit 1"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
+  worker:
+    build:
+      context: ./kiln_parser
+      dockerfile: Dockerfile
+    container_name: screen_worker
+    volumes:
+      - /root/screen:/root/screen:ro
+    environment:
+      - TZ=Asia/Novosibirsk
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-sensor_data}
+    depends_on:
+      - db
+    networks:
+      - app_network
+    restart: unless-stopped
+    # healthcheck можно оставить, но проверить python-процесс:
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python.*worker.py' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Nginx reverse proxy
   nginx:
