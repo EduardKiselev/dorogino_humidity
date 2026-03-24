@@ -41,7 +41,7 @@ def parse_by_cells(image_path):
     ]
     
     result = []
-    config = r'--psm 7 -c tessedit_char_whitelist=0123456789,.-'
+    config = r'-l eng --psm 7 -c tessedit_char_whitelist=0123456789,.-'
     
     for i in range(total_rows):
         y1 = start_y + i * row_height + 2
