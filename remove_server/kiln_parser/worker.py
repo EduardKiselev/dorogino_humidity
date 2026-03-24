@@ -13,12 +13,9 @@ from parser import parse_by_cells
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('/var/log/worker/worker.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
@@ -63,11 +60,13 @@ def process_new_files():
             if f.endswith('.png') and f not in processed
         ]
         
+        
         if not new_files:
             logger.debug("No new files to process")
             return
-            
-        logger.info(f"Found {len(new_files)} new file(s)")
+
+    
+        logger.info(f"Found {len(new_files)} new file(s) - {new_files}")
         
         for filename in new_files:
             filepath = os.path.join(SCREEN_DIR, filename)
@@ -96,6 +95,7 @@ def main():
     
     while True:
         try:
+            logger.info("Start Process")
             process_new_files()
         except Exception as e:
             logger.error(f"Unhandled error in main loop: {e}", exc_info=True)
