@@ -50,7 +50,7 @@ def process_new_files():
         
         # Получаем множество уже обработанных имён
         processed = {r[0] for r in session.query(ScreenRecord.filename).all()}
-        logger.info(f"Already Processed - {processed}")
+       # logger.info(f"Already Processed - {processed}")
         if not os.path.isdir(SCREEN_DIR):
             logger.warning(f"Directory not found: {SCREEN_DIR}")
             return
@@ -73,7 +73,7 @@ def process_new_files():
             logger.info(f"Parsing {filepath}")
             try:
                 data = parse_by_cells(filepath)
-                logger.info({data})
+                logger.info(f"{data}")
                 record = ScreenRecord(
                     filename=filename,
                     screen_date=get_date_from_filename(filename),
