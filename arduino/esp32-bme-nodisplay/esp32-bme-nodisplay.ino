@@ -7,10 +7,10 @@
 
 // === НАСТРОЙКИ ===
 const char* ssid = "ELTEX-8478";
-const char* password = "GP21371842";
+const char* password = "eSm-kp7-VdF-PtA";
 const int timeDelay = 60000;
 
-#define SENSOR_ID 4
+#define SENSOR_ID 2
 #define I2C_SDA 32
 #define I2C_SCL 33
 

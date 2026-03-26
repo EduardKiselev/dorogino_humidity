@@ -9,12 +9,12 @@
 
 // === НАСТРОЙКИ ===
 const char* ssid = "ELTEX-8478";
-const char* password = "GP21371842";
+const char* password = "eSm-kp7-VdF-PtA";
 const int timeDelay = 60000;
 
-#define SENSOR_ID 3
-#define I2C_SDA 21
-#define I2C_SCL 22
+#define SENSOR_ID 1
+#define I2C_SDA 32
+#define I2C_SCL 33
 
 // Сервера (массив для совместимости)
 const char* servers[] = {"192.168.1.100", "192.168.1.101"};
