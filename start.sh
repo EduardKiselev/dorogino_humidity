@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Остановить при любой ошибке
 
-cd ~/dev/dorogino_humidity
+cd ~/dev/humidity/dorogino_humidity
 
 git pull
 
