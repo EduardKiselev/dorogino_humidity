@@ -102,6 +102,8 @@ services:
       - ./certs:/etc/nginx/certs
       - ./nginx/logs:/var/log/nginx
       - ./certbot/www:/var/www/certbot
+    extra_hosts:
+      - "host-gateway:host-gateway" 
     depends_on:
       - front
       - collector
