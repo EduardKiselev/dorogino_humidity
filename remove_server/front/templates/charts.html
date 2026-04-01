@@ -31,7 +31,7 @@
             </div>
 
             <div class="col-md-12 mb-3">
-                <h5>За день</h5>
+                <h5>24–48 часов назад</h5>
                 <div style="height: 250px; position: relative;">
                     <canvas id="chart-week-{{ sensor_id }}"></canvas>
                 </div>
@@ -206,6 +206,7 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
 const dayDataBySensor = groupBySensor({{ day_data|tojson }});
 const monthDataBySensor = groupBySensor({{ month_data|tojson }});
 const yearDataBySensor = groupBySensor({{ year_data|tojson }});
+const twoDayBeforeDataBySensor = groupBySensor({{ two_day_before|tojson }});
 
 // ========== ОТЛАДКА ==========
 console.log('🔍 ===== ОТЛАДКА ДАННЫХ =====');
@@ -236,6 +237,16 @@ console.log('🔍 Проверка элементов canvas:');
         );
     } else {
         console.log(`ℹ️ Нет данных за день для сенсора ${sensorId}`);
+    }
+
+    if (twoDayBeforeDataBySensor[sensorId] && twoDayBeforeDataBySensor[sensorId].length > 0) {
+    charts[`chart-week-${sensorId}`] = createDualAxisChart(
+        `chart-week-${sensorId}`, 
+        twoDayBeforeDataBySensor[sensorId], 
+        'hour'  // тот же масштаб, что и за день
+    );
+    } else {
+        console.log(`ℹ️ Нет данных за 24-48ч для сенсора ${sensorId}`);
     }
     
     // График за месяц

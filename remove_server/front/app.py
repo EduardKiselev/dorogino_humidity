@@ -243,16 +243,20 @@ def charts():
     
     # Получаем все данные за разные периоды
     day_ago = now - timedelta(days=1)
+    two_day_before = day_ago - timedelta(days=1)
     month_ago = now - timedelta(days=30)
     year_ago = now - timedelta(days=365)
+
     
     # Запросы для каждого периода
     day_readings = SensorReading.query.filter(
         SensorReading.timestamp >= day_ago
     ).order_by(SensorReading.timestamp).all()
 
-    week_readings = SensorReading.query.filter(
-        SensorReading.timestamp >= day_ago - timedelta(days=7)
+    # Вместо two_day_before_readings → prev_day_readings
+    prev_day_readings = SensorReading.query.filter(
+        SensorReading.timestamp >= two_day_before,
+        SensorReading.timestamp < day_ago
     ).order_by(SensorReading.timestamp).all()
     
     month_readings = SensorReading.query.filter(
@@ -272,13 +276,13 @@ def charts():
         'timestamp': r.timestamp.isoformat()
     } for r in day_readings]
 
-    week_data = [{
+    two_day_before_data = [{
         'id': r.id,
         'sensor_id': int(r.sensor_id),
         'temperature': float(r.temperature),
         'humidity': float(r.humidity),
         'timestamp': r.timestamp.isoformat()
-    } for r in week_readings]
+    } for r in two_day_before_readings]
     
     month_data = [{
         'id': r.id,
@@ -295,8 +299,6 @@ def charts():
         'humidity': float(r.humidity),
         'timestamp': r.timestamp.isoformat()
     } for r in year_readings]
-
-    # print('day_data', day_data[1:10])
     
     # Получаем уникальные ID сенсоров
     sensor_ids = sorted(list(set(r['sensor_id'] for r in day_data + month_data + year_data)))
@@ -304,7 +306,7 @@ def charts():
     return render_template(
         'charts.html',
         day_data=day_data,
-        week_data=week_data,
+        two_day_before=two_day_before_data,
         month_data=month_data,
         year_data=year_data,
         sensor_ids=sensor_ids,
