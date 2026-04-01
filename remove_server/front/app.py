@@ -253,7 +253,6 @@ def charts():
         SensorReading.timestamp >= day_ago
     ).order_by(SensorReading.timestamp).all()
 
-    # Вместо two_day_before_readings → prev_day_readings
     prev_day_readings = SensorReading.query.filter(
         SensorReading.timestamp >= two_day_before,
         SensorReading.timestamp < day_ago
@@ -282,7 +281,7 @@ def charts():
         'temperature': float(r.temperature),
         'humidity': float(r.humidity),
         'timestamp': r.timestamp.isoformat()
-    } for r in two_day_before_readings]
+    } for r in prev_day_readings]
     
     month_data = [{
         'id': r.id,
