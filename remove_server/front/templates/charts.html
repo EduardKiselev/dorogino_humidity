@@ -184,6 +184,8 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         position: 'left',
                         title: { display: true, text: 'Температура (°C)' },
                         grid: { drawOnChartArea: false },
+                        min: 20,  
+                        max: 45,  
                         ticks: {
                             color: 'rgb(255, 99, 132)',
                             suggestedMin: -5,
@@ -196,6 +198,8 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         position: 'right',
                         title: { display: true, text: 'Влажность (%)' },
                         grid: { drawOnChartArea: false },
+                        min: 20,
+                        max: 60,
                         ticks: {
                             color: 'rgb(54, 162, 235)',
                             min: 0,
