@@ -29,6 +29,13 @@
                     <canvas id="chart-day-{{ sensor_id }}"></canvas>
                 </div>
             </div>
+
+            <div class="col-md-12 mb-3">
+                <h5>За день</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-week-{{ sensor_id }}"></canvas>
+                </div>
+            </div>            
             
             <!-- За месяц -->
             <div class="col-md-12 mb-3">
@@ -53,14 +60,13 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- УБРАТЬ ПРОБЕЛЫ В КОНЦЕ URL! -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
 <script>
 // Отладка: проверяем загрузку библиотек
-console.log('✅ Chart.js загружен:', typeof Chart !== 'undefined');
+//console.log('✅ Chart.js загружен:', typeof Chart !== 'undefined');
 
 // Храним все графики для перерисовки
 const charts = {};
