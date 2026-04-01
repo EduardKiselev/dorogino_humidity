@@ -30,12 +30,29 @@
                 </div>
             </div>
 
+            <!-- 24–48 часов назад (ИСПРАВЛЕНО: уникальный ID) -->
             <div class="col-md-12 mb-3">
                 <h5>24–48 часов назад</h5>
                 <div style="height: 250px; position: relative;">
+                    <canvas id="chart-prev-day-{{ sensor_id }}"></canvas>
+                </div>
+            </div>  
+            
+            <!-- За неделю -->
+            <div class="col-md-12 mb-3">
+                <h5>За неделю</h5>
+                <div style="height: 250px; position: relative;">
                     <canvas id="chart-week-{{ sensor_id }}"></canvas>
                 </div>
-            </div>            
+            </div>
+
+            <!-- Предыдущая неделя -->
+            <div class="col-md-12 mb-3">
+                <h5>Пред. неделя</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="chart-prev-week-{{ sensor_id }}"></canvas>
+                </div>
+            </div>
             
             <!-- За месяц -->
             <div class="col-md-12 mb-3">
@@ -65,9 +82,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
 <script>
-// Отладка: проверяем загрузку библиотек
-//console.log('✅ Chart.js загружен:', typeof Chart !== 'undefined');
-
 // Храним все графики для перерисовки
 const charts = {};
 
@@ -202,79 +216,65 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
     }
 }
 
-// Группируем данные по сенсорам
+// ========== ГРУППИРОВКА ДАННЫХ ==========
 const dayDataBySensor = groupBySensor({{ day_data|tojson }});
+const twoDayBeforeDataBySensor = groupBySensor({{ two_day_before|tojson }});
+const weekDataBySensor = groupBySensor({{ week_data|tojson }});
+const prevWeekDataBySensor = groupBySensor({{ prev_week_data|tojson }});
 const monthDataBySensor = groupBySensor({{ month_data|tojson }});
 const yearDataBySensor = groupBySensor({{ year_data|tojson }});
-const twoDayBeforeDataBySensor = groupBySensor({{ two_day_before|tojson }});
 
-// ========== ОТЛАДКА ==========
+// ========== ОТЛАДКА И ОТРИСОВКА ==========
 console.log('🔍 ===== ОТЛАДКА ДАННЫХ =====');
 console.log('📊 sensor_ids:', {{ sensor_ids|tojson }});
-console.log('📊 dayDataBySensor:', dayDataBySensor);
-console.log('📊 monthDataBySensor:', monthDataBySensor);
-console.log('📊 yearDataBySensor:', yearDataBySensor);
-console.log('🔍 Проверка элементов canvas:');
+
 {% for sensor_id in sensor_ids %}
 {
-    // БЛОК ДЛЯ СОЗДАНИЯ НОВОЙ ОБЛАСТИ ВИДИМОСТИ
     const sensorId = String({{ sensor_id }});
     
-    console.log(`  📌 Сенсор ${sensorId}:`);
-    console.log(`    - canvas day:`, document.getElementById(`chart-day-${sensorId}`) ? '✅' : '❌');
-    console.log(`    - canvas month:`, document.getElementById(`chart-month-${sensorId}`) ? '✅' : '❌');
-    console.log(`    - canvas year:`, document.getElementById(`chart-year-${sensorId}`) ? '✅' : '❌');
-    console.log(`    - day data:`, dayDataBySensor[sensorId]?.length || 0, 'записей');
-    console.log(`    - month data:`, monthDataBySensor[sensorId]?.length || 0, 'записей');
-    console.log(`    - year data:`, yearDataBySensor[sensorId]?.length || 0, 'записей');
+    console.log(`\n📌 Сенсор ${sensorId}:`);
     
-    // График за день
-    if (dayDataBySensor[sensorId] && dayDataBySensor[sensorId].length > 0) {
-        charts[`chart-day-${sensorId}`] = createDualAxisChart(
-            `chart-day-${sensorId}`, 
-            dayDataBySensor[sensorId], 
-            'hour'
-        );
-    } else {
-        console.log(`ℹ️ Нет данных за день для сенсора ${sensorId}`);
-    }
-
-    if (twoDayBeforeDataBySensor[sensorId] && twoDayBeforeDataBySensor[sensorId].length > 0) {
-    charts[`chart-week-${sensorId}`] = createDualAxisChart(
-        `chart-week-${sensorId}`, 
-        twoDayBeforeDataBySensor[sensorId], 
-        'hour'  // тот же масштаб, что и за день
-    );
-    } else {
-        console.log(`ℹ️ Нет данных за 24-48ч для сенсора ${sensorId}`);
+    // Проверка наличия канвасов
+    console.log(`  canvas day:`, document.getElementById(`chart-day-${sensorId}`) ? '✅' : '❌');
+    console.log(`  canvas prev-day:`, document.getElementById(`chart-prev-day-${sensorId}`) ? '✅' : '❌');
+    console.log(`  canvas week:`, document.getElementById(`chart-week-${sensorId}`) ? '✅' : '❌');
+    console.log(`  canvas prev-week:`, document.getElementById(`chart-prev-week-${sensorId}`) ? '✅' : '❌');
+    console.log(`  canvas month:`, document.getElementById(`chart-month-${sensorId}`) ? '✅' : '❌');
+    console.log(`  canvas year:`, document.getElementById(`chart-year-${sensorId}`) ? '✅' : '❌');
+    
+    // 1. График за день
+    if (dayDataBySensor[sensorId]?.length > 0) {
+        charts[`chart-day-${sensorId}`] = createDualAxisChart(`chart-day-${sensorId}`, dayDataBySensor[sensorId], 'hour');
     }
     
-    // График за месяц
-    if (monthDataBySensor[sensorId] && monthDataBySensor[sensorId].length > 0) {
-        charts[`chart-month-${sensorId}`] = createDualAxisChart(
-            `chart-month-${sensorId}`, 
-            monthDataBySensor[sensorId], 
-            'day'
-        );
-    } else {
-        console.log(`ℹ️ Нет данных за месяц для сенсора ${sensorId}`);
+    // 2. График 24-48 часов назад (ИСПРАВЛЕНО: chart-prev-day)
+    if (twoDayBeforeDataBySensor[sensorId]?.length > 0) {
+        charts[`chart-prev-day-${sensorId}`] = createDualAxisChart(`chart-prev-day-${sensorId}`, twoDayBeforeDataBySensor[sensorId], 'hour');
     }
     
-    // График за год
-    if (yearDataBySensor[sensorId] && yearDataBySensor[sensorId].length > 0) {
-        charts[`chart-year-${sensorId}`] = createDualAxisChart(
-            `chart-year-${sensorId}`, 
-            yearDataBySensor[sensorId], 
-            'month'
-        );
-    } else {
-        console.log(`ℹ️ Нет данных за год для сенсора ${sensorId}`);
+    // 3. График за неделю
+    if (weekDataBySensor[sensorId]?.length > 0) {
+        charts[`chart-week-${sensorId}`] = createDualAxisChart(`chart-week-${sensorId}`, weekDataBySensor[sensorId], 'day');
+    }
+    
+    // 4. График за предыдущую неделю
+    if (prevWeekDataBySensor[sensorId]?.length > 0) {
+        charts[`chart-prev-week-${sensorId}`] = createDualAxisChart(`chart-prev-week-${sensorId}`, prevWeekDataBySensor[sensorId], 'day');
+    }
+    
+    // 5. График за месяц
+    if (monthDataBySensor[sensorId]?.length > 0) {
+        charts[`chart-month-${sensorId}`] = createDualAxisChart(`chart-month-${sensorId}`, monthDataBySensor[sensorId], 'day');
+    }
+    
+    // 6. График за год
+    if (yearDataBySensor[sensorId]?.length > 0) {
+        charts[`chart-year-${sensorId}`] = createDualAxisChart(`chart-year-${sensorId}`, yearDataBySensor[sensorId], 'month');
     }
 }
 {% endfor %}
 
-console.log('📊 Всего графиков создано:', Object.keys(charts).length);
-console.log('📊 Список графиков:', Object.keys(charts));
+console.log('\n📊 Всего графиков создано:', Object.keys(charts).length);
 console.log('🔍 ===== КОНЕЦ ОТЛАДКИ =====');
 </script>
 {% endblock %}

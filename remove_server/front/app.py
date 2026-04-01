@@ -242,10 +242,15 @@ def charts():
     now = datetime.now()
     
     # Получаем все данные за разные периоды
+    now = datetime.now()
     day_ago = now - timedelta(days=1)
     two_day_before = day_ago - timedelta(days=1)
+    week_ago = now - timedelta(days=7)
+    prev_week_start = week_ago - timedelta(days=7)
+    prev_week_end = week_ago
     month_ago = now - timedelta(days=30)
     year_ago = now - timedelta(days=365)
+
 
     
     # Запросы для каждого периода
@@ -256,6 +261,15 @@ def charts():
     prev_day_readings = SensorReading.query.filter(
         SensorReading.timestamp >= two_day_before,
         SensorReading.timestamp < day_ago
+    ).order_by(SensorReading.timestamp).all()
+
+    week_readings = SensorReading.query.filter(
+    SensorReading.timestamp >= week_ago
+    ).order_by(SensorReading.timestamp).all()
+
+    prev_week_readings = SensorReading.query.filter(
+        SensorReading.timestamp >= prev_week_start,
+        SensorReading.timestamp < prev_week_end
     ).order_by(SensorReading.timestamp).all()
     
     month_readings = SensorReading.query.filter(
@@ -282,6 +296,13 @@ def charts():
         'humidity': float(r.humidity),
         'timestamp': r.timestamp.isoformat()
     } for r in prev_day_readings]
+
+    week_data = [{'id': r.id, 'sensor_id': int(r.sensor_id), 'temperature': float(r.temperature), 
+              'humidity': float(r.humidity), 'timestamp': r.timestamp.isoformat()} for r in week_readings]
+
+    prev_week_data = [{'id': r.id, 'sensor_id': int(r.sensor_id), 'temperature': float(r.temperature), 
+                    'humidity': float(r.humidity), 'timestamp': r.timestamp.isoformat()} for r in prev_week_readings]
+
     
     month_data = [{
         'id': r.id,
@@ -306,6 +327,8 @@ def charts():
         'charts.html',
         day_data=day_data,
         two_day_before=two_day_before_data,
+        week_data=week_data,      
+        prev_week_data=prev_week_data,    
         month_data=month_data,
         year_data=year_data,
         sensor_ids=sensor_ids,
