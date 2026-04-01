@@ -188,8 +188,7 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         max: 45,  
                         ticks: {
                             color: 'rgb(255, 99, 132)',
-                            suggestedMin: -5,
-                            suggestedMax: 40
+                            stepSize: 5
                         }
                     },
                     yHum: {
@@ -202,8 +201,6 @@ function createDualAxisChart(canvasId, data, timeUnit = 'hour') {
                         max: 60,
                         ticks: {
                             color: 'rgb(54, 162, 235)',
-                            min: 0,
-                            max: 100,
                             stepSize: 10
                         }
                     }
