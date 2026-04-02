@@ -96,7 +96,7 @@
         
         function updateTimeDisplay(time) {
             // Convert time to local display format accounting for GMT+7 offset
-            const localTime = new Date(time.getTime()); // Adjust for GMT+7
+            const localTime = new Date(time.getTime() + 4*60*60*1000); // Adjust for GMT+7
             timeDisplay.textContent = localTime.toLocaleString();
         }
         
