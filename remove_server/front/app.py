@@ -332,23 +332,30 @@ def monitoring():
 @app.route('/workshop-diagram')
 def workshop_diagram():
     """Page showing workshop diagram with sensor positions and time slider"""
-    # Get all sensor locations
-    sensor_locations = SensorLocation.query.all()
+    # Get only active sensor locations
+    sensor_locations = SensorLocation.query.filter_by(active=True).all()
     
-    # Get the most recent readings for each sensor
-    subquery = db.session.query(
-        SensorReading.sensor_id,
-        db.func.max(SensorReading.timestamp).label('max_time')
-    ).group_by(SensorReading.sensor_id).subquery()
+    # Get the most recent readings for each active sensor
+    # Extract active sensor IDs
+    active_sensor_ids = [location.sensor_id for location in sensor_locations]
     
-    latest_readings = db.session.query(SensorReading).join(
-        subquery,
-        (SensorReading.sensor_id == subquery.c.sensor_id) &
-        (SensorReading.timestamp == subquery.c.max_time)
-    ).all()
-    
-    # Create a dictionary mapping sensor_id to its reading
-    readings_dict = {reading.sensor_id: reading for reading in latest_readings}
+    if active_sensor_ids:  # Only query if there are active sensors
+        # Subquery to find the latest reading for each active sensor
+        subquery = db.session.query(
+            SensorReading.sensor_id,
+            db.func.max(SensorReading.timestamp).label('max_time')
+        ).filter(SensorReading.sensor_id.in_(active_sensor_ids)).group_by(SensorReading.sensor_id).subquery()
+        
+        latest_readings = db.session.query(SensorReading).join(
+            subquery,
+            (SensorReading.sensor_id == subquery.c.sensor_id) &
+            (SensorReading.timestamp == subquery.c.max_time)
+        ).all()
+        
+        # Create a dictionary mapping sensor_id to its reading
+        readings_dict = {reading.sensor_id: reading for reading in latest_readings}
+    else:
+        readings_dict = {}
     
     # Combine sensor locations with their readings
     sensors_with_data = []

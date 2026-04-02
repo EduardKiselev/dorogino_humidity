@@ -17,20 +17,6 @@ class SensorReading(db.Model):
     source_ip = db.Column(db.String(50))
     destination_ip = db.Column(db.String(50))
 
-class SensorLocation(db.Model):
-    __tablename__ = 'sensor_locations'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    sensor_id = db.Column(db.Integer, nullable=False, unique=True)  # Links to SensorReading.sensor_id
-    description = db.Column(db.String(500), nullable=False)  # Description of where the sensor is located
-    x_coordinate = db.Column(db.Float, nullable=False)  # X coordinate on the workshop diagram
-    y_coordinate = db.Column(db.Float, nullable=False)  # Y coordinate on the workshop diagram
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<SensorLocation sensor_id={self.sensor_id} description="{self.description}" x={self.x_coordinate} y={self.y_coordinate}>'
-    
     def to_dict(self):
         return {
             'id': self.id,
@@ -40,6 +26,33 @@ class SensorLocation(db.Model):
             'humidity': self.humidity,
             'source_ip': self.source_ip,
             'destination_ip': self.destination_ip
+        }
+
+class SensorLocation(db.Model):
+    __tablename__ = 'sensor_locations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sensor_id = db.Column(db.Integer, nullable=False, unique=True)  # Links to SensorReading.sensor_id
+    description = db.Column(db.String(500), nullable=False)  # Description of where the sensor is located
+    x_coordinate = db.Column(db.Float, nullable=False)  # X coordinate on the workshop diagram
+    y_coordinate = db.Column(db.Float, nullable=False)  # Y coordinate on the workshop diagram
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<SensorLocation sensor_id={self.sensor_id} description="{self.description}" x={self.x_coordinate} y={self.y_coordinate}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sensor_id': self.sensor_id,
+            'description': self.description,
+            'x_coordinate': self.x_coordinate,
+            'y_coordinate': self.y_coordinate,
+            'active': self.active,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
         }
 
 class Setting(db.Model):
