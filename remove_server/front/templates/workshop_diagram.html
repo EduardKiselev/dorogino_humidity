@@ -1,16 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Workshop Diagram{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>Схема цеха</h1>
+    
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <label for="timeSlider">Select Time:</label>
+            <input type="range" class="form-control-range" id="timeSlider" min="0" max="1440" value="0" style="width: 100%;">
+            <div class="d-flex justify-content-between" id="sliderLabelsContainer">
+                <!-- Labels will be added by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Workshop diagram container -->
+            <div id="diagram-container" style="position: relative; width: 100%; height: 550px; /* Changed height to maintain aspect ratio */ border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='workshop-plan.png') }}'); background-size: contain; /* Changed to contain to show full image */ background-repeat: no-repeat; /* Prevent repeating */ background-position: center; /* Center the image */">
+                <!-- Sensor markers will be dynamically placed here -->
+                {% for sensor in sensors_with_data %}
+                <div class="sensor-marker" 
+                     data-sensor-id="{{ sensor.sensor_id }}"
+                     style="position: absolute; left: {{ sensor.x }}%; top: {{ sensor.y }}%; transform: translate(-50%, -50%); cursor: pointer;"
+                     title="{{ sensor.description }}">
+                    <div class="sensor-info-card" style="background: white; padding: 3px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.6em;">
+                        <strong>Sensor {{ sensor.sensor_id }}</strong><br>
+                        {% if sensor.temperature %}
+                        T: {{ "%.1f"|format(sensor.temperature) }}°C<br>
+                        H: {{ "%.1f"|format(sensor.humidity) }}%
+                        {% else %}
+                        No data
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
 <script>
     // Time slider functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Wait for all elements to be available in DOM
         const timeSlider = document.getElementById('timeSlider');
         const timeDisplay = document.getElementById('timeDisplay');
         const labelsContainer = document.getElementById('sliderLabelsContainer');
-        
-        // Check if all required elements exist before proceeding
-        if (!timeSlider || !timeDisplay || !labelsContainer) {
-            console.error('Required slider elements not found in the DOM');
-            return;
-        }
         
         // Set slider range to cover 24 hours (1440 minutes)
         timeSlider.min = 0;
@@ -25,10 +62,11 @@
             
             const label = document.createElement('span');
             label.textContent = labelTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            // Position labels based on percentage across the container
-            label.style.width = '4%'; // Each label gets about 4% of space (100%/24 ~ 4.17%)
-            label.style.textAlign = 'center';
-            label.style.display = 'inline-block';
+            label.style.position = 'absolute';
+            label.style.left = `${(i / 24) * 100}%`;
+            label.style.transform = 'translateX(-50%)';
+            label.style.fontSize = '0.7em';
+            label.style.whiteSpace = 'nowrap';
             
             labelsContainer.appendChild(label);
         }
@@ -96,3 +134,4 @@
         }
     });
 </script>
+{% endblock %}
