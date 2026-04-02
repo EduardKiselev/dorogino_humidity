@@ -209,10 +209,17 @@ def serve_screen(filename):
 @app.route('/charts')
 def charts():
     """Страница графиков"""
-    now = datetime.now()
     
     # Получаем все данные за разные периоды
-    now = datetime.now()
+    now = datetime.now(target_tz)
+
+    def to_utc(dt):
+        """Гарантированно конвертирует aware-datetime в UTC"""
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=target_tz)
+        return dt.astimezone(timezone.utc)
+
+    now = to_utc(now) 
     day_ago = now - timedelta(days=1)
     two_day_before = day_ago - timedelta(days=1)
     week_ago = now - timedelta(days=7)
@@ -220,6 +227,8 @@ def charts():
     prev_week_end = week_ago
     month_ago = now - timedelta(days=30)
     year_ago = now - timedelta(days=365)
+
+    
 
 
     
