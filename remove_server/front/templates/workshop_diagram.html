@@ -26,7 +26,7 @@
                      data-sensor-id="{{ sensor.sensor_id }}"
                      style="position: absolute; left: {{ sensor.x }}%; top: {{ sensor.y }}%; transform: translate(-50%, -50%); cursor: pointer;"
                      title="{{ sensor.description }}">
-                    <div class="sensor-info-card" style="background: white; padding: 3px; border-radius: 3px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.7em;">
+                    <div class="sensor-info-card" style="background: white; padding: 3px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.6em;">
                         <strong>Sensor {{ sensor.sensor_id }}</strong><br>
                         {% if sensor.temperature %}
                         T: {{ "%.1f"|format(sensor.temperature) }}°C<br>
