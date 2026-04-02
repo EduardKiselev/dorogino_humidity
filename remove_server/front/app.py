@@ -426,6 +426,7 @@ def manage_sensor_locations():
                 description = request.form.get(f'description_{i}')
                 x_coord = request.form.get(f'x_{i}')
                 y_coord = request.form.get(f'y_{i}')
+                active_status = request.form.get(f'active_{i}')  # New field for active status
                 
                 if description and x_coord and y_coord:
                     try:
@@ -439,13 +440,17 @@ def manage_sensor_locations():
                             location.description = description
                             location.x_coordinate = x
                             location.y_coordinate = y
+                            # Update active status if provided
+                            if active_status is not None:
+                                location.active = active_status == 'on'
                         else:
                             # Create new location
                             location = SensorLocation(
                                 sensor_id=i,
                                 description=description,
                                 x_coordinate=x,
-                                y_coordinate=y
+                                y_coordinate=y,
+                                active=(active_status == 'on') if active_status is not None else True
                             )
                             db.session.add(location)
                     except ValueError:
@@ -466,13 +471,15 @@ def manage_sensor_locations():
             sensor_locations[i] = {
                 'description': location.description,
                 'x': location.x_coordinate,
-                'y': location.y_coordinate
+                'y': location.y_coordinate,
+                'active': location.active
             }
         else:
             sensor_locations[i] = {
                 'description': f'Sensor {i} location description',
                 'x': 0.0,
-                'y': 0.0
+                'y': 0.0,
+                'active': True
             }
     
     return render_template('admin/sensor_locations.html', sensor_locations=sensor_locations)

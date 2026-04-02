@@ -32,6 +32,11 @@
                                min="0" max="100" step="0.1" value="{{ sensor_locations[i]['y'] }}" required>
                     </div>
                 </div>
+                <div class="form-check mt-3">
+                    <input type="checkbox" class="form-check-input" id="active_{{ i }}" name="active_{{ i }}" 
+                           {% if sensor_locations[i]['active'] %}checked{% endif %}>
+                    <label class="form-check-label" for="active_{{ i }}">Active (show on diagram)</label>
+                </div>
             </div>
         </div>
         {% endfor %}
