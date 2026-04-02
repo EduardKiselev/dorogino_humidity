@@ -25,17 +25,14 @@
             <div id="diagram-container" style="position: relative; width: 100%; height: 550px; border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='workshop-plan.png') }}'); background-size: contain; background-repeat: no-repeat; background-position: center;">
                 {% for sensor in sensors_with_data %}
                 <div class="sensor-marker server-rendered" 
-                    data-sensor-id="{{ sensor.sensor_id }}"
-                    style="position: absolute; left: {{ sensor.x }}%; top: {{ sensor.y }}%; transform: translate(-50%, -50%); cursor: pointer;"
-                    title="{{ sensor.description }}">
+                     data-sensor-id="{{ sensor.sensor_id }}"
+                     style="position: absolute; left: {{ sensor.x }}%; top: {{ sensor.y }}%; transform: translate(-50%, -50%); cursor: pointer;"
+                     title="{{ sensor.description }}">
                     <div class="sensor-info-card" style="background: white; padding: 3px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.6em;">
                         <strong>Sensor {{ sensor.sensor_id }}</strong><br>
                         
                         {% if sensor.temperature is not none %}
                             T: {{ "%.1f"|format(sensor.temperature) }}°C
-                            {% if sensor.temperature_std is not none %}
-                                <br><small>σ: {{ "%.1f"|format(sensor.temperature_std) }}</small>
-                            {% endif %}
                         {% endif %}
                         
                         <br>
@@ -126,12 +123,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     });
     
-    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТПРАВКИ ВРЕМЕНИ ===
+    // Форматирует дату как ISO-строку с явным указанием +07:00
     function formatAsGMT7ISO(date) {
-        // Сдвигаем UTC-время на +7 часов для получения локального времени
         const gmt7Time = new Date(date.getTime() + 7 * 60 * 60 * 1000);
         const iso = gmt7Time.toISOString();
-        // Заменяем 'Z' на '+07:00' для явного указания таймзоны
         return iso.slice(0, -1) + '+07:00';
     }
     
@@ -160,26 +155,33 @@ document.addEventListener('DOMContentLoaded', function() {
             marker.style.cssText = `position:absolute;left:${sensor.x}%;top:${sensor.y}%;transform:translate(-50%,-50%);cursor:pointer;z-index:10;`;
             marker.title = sensor.description || `Sensor ${sensor.sensor_id}`;
             
+            // Базовые значения
             const tempVal = sensor.temperature != null ? sensor.temperature.toFixed(1) + '°C' : 'No data';
             const humVal = sensor.humidity != null ? sensor.humidity.toFixed(1) + '%' : 'No data';
             
+            // Только humidity_std
+            const humStd = sensor.humidity_std != null ? `<br><small>σ: ${sensor.humidity_std.toFixed(1)}%</small>` : '';
+            
             marker.innerHTML = `
-            <div class="sensor-info-card" style="background:white;padding:4px 6px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.25);border:1px solid #007bff;font-size:0.75em;min-width:110px;text-align:center;">
-                <strong>#${sensor.sensor_id}</strong><br>
-                T: ${tempVal}<br>
-                H: ${humVal}${humStd}
-            </div>
+                <div class="sensor-info-card" style="background:white;padding:4px 6px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.25);border:1px solid #007bff;font-size:0.75em;min-width:110px;text-align:center;">
+                    <strong>#${sensor.sensor_id}</strong><br>
+                    T: ${tempVal}<br>
+                    H: ${humVal}${humStd}
+                </div>
             `;
             
-                    marker.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const details = [
-                `Sensor ${sensor.sensor_id}`,
-                sensor.description || '',
-                `T: ${tempVal}`,
-                `H: ${humVal}${humStd}`
-            ].filter(Boolean).join('\n');
-            alert(details);
+            marker.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const details = [
+                    `Sensor ${sensor.sensor_id}`,
+                    sensor.description || '',
+                    `T: ${tempVal}`,
+                    `H: ${humVal}${humStd}`
+                ].filter(Boolean).join('\n');
+                alert(details);
+            });
+            
+            diagramContainer.appendChild(marker);
         });
     }
     
