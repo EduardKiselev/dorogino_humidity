@@ -426,7 +426,8 @@ def manage_sensor_locations():
                 description = request.form.get(f'description_{i}')
                 x_coord = request.form.get(f'x_{i}')
                 y_coord = request.form.get(f'y_{i}')
-                active_status = request.form.get(f'active_{i}')  # New field for active status
+                # Fix: Check if checkbox is present in form data (meaning checked) or not
+                active_status = f'active_{i}' in request.form
                 
                 if description and x_coord and y_coord:
                     try:
@@ -440,9 +441,8 @@ def manage_sensor_locations():
                             location.description = description
                             location.x_coordinate = x
                             location.y_coordinate = y
-                            # Update active status if provided
-                            if active_status is not None:
-                                location.active = active_status == 'on'
+                            # Update active status based on presence in form data
+                            location.active = active_status
                         else:
                             # Create new location
                             location = SensorLocation(
@@ -450,7 +450,7 @@ def manage_sensor_locations():
                                 description=description,
                                 x_coordinate=x,
                                 y_coordinate=y,
-                                active=(active_status == 'on') if active_status is not None else True
+                                active=active_status
                             )
                             db.session.add(location)
                     except ValueError:
