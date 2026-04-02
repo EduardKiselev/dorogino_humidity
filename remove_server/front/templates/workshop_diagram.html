@@ -1,8 +1,3 @@
-{% extends "base.html" %}
-
-{% block title %}Workshop Diagram{% endblock %}
-
-{% block content %}
 <div class="container-fluid">
     <h1>Workshop Diagram</h1>
     
@@ -19,7 +14,7 @@
     <div class="row">
         <div class="col-md-12">
             <!-- Workshop diagram container -->
-            <div id="diagram-container" style="position: relative; width: 100%; height: 600px; border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='plan.jpg') }}'); background-size: cover;">
+            <div id="diagram-container" style="position: relative; width: 100%; height: 300px; /* Changed height to maintain aspect ratio */ border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='workshop-plan.png') }}'); background-size: contain; /* Changed to contain to show full image */ background-repeat: no-repeat; /* Prevent repeating */ background-position: center; /* Center the image */">
                 <!-- Sensor markers will be dynamically placed here -->
                 {% for sensor in sensors_with_data %}
                 <div class="sensor-marker" 
@@ -41,69 +36,3 @@
         </div>
     </div>
 </div>
-
-<script>
-let currentTime = new Date();
-let sensorReadings = {{ sensors_with_data | tojson }};
-let originalPositions = [];
-
-// Store original positions
-document.querySelectorAll('.sensor-marker').forEach((marker, index) => {
-    const rect = marker.getBoundingClientRect();
-    const containerRect = document.getElementById('diagram-container').getBoundingClientRect();
-    originalPositions[index] = {
-        x: parseFloat(marker.style.left),
-        y: parseFloat(marker.style.top)
-    };
-});
-
-function updateTimeDisplay() {
-    document.getElementById('timeDisplay').textContent = currentTime.toLocaleString();
-}
-
-function updateSensorsForTime(time) {
-    // Format time as ISO string
-    const timeStr = time.toISOString();
-    
-    fetch(`/api/sensor-readings-by-time?time=${encodeURIComponent(timeStr)}`)
-        .then(response => response.json())
-        .then(data => {
-            // Update sensor markers with new data
-            document.querySelectorAll('.sensor-marker').forEach(marker => {
-                const sensorId = marker.getAttribute('data-sensor-id');
-                const sensorData = data.find(s => s.sensor_id == sensorId);
-                
-                if (sensorData) {
-                    const infoCard = marker.querySelector('.sensor-info-card');
-                    if (sensorData.temperature !== null && sensorData.humidity !== null) {
-                        infoCard.innerHTML = `
-                            <strong>Sensor ${sensorData.sensor_id}</strong><br>
-                            T: ${sensorData.temperature.toFixed(1)}°C<br>
-                            H: ${sensorData.humidity.toFixed(1)}%
-                        `;
-                    } else {
-                        infoCard.innerHTML = \`<strong>Sensor \${sensorData.sensor_id}</strong><br>No data\`;
-                    }
-                }
-            });
-        })
-        .catch(error => console.error('Error fetching sensor data:', error));
-}
-
-// Initialize
-updateTimeDisplay();
-
-// Set up time slider
-const timeSlider = document.getElementById('timeSlider');
-timeSlider.addEventListener('input', function() {
-    // Calculate time offset based on slider position (0 = 24 hours ago, 100 = now)
-    const maxHoursBack = 24;
-    const hoursOffset = maxHoursBack * (100 - parseInt(this.value)) / 100;
-    currentTime = new Date();
-    currentTime.setHours(currentTime.getHours() - hoursOffset);
-    
-    updateTimeDisplay();
-    updateSensorsForTime(currentTime);
-});
-</script>
-{% endblock %}
