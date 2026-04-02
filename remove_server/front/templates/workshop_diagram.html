@@ -1,9 +1,16 @@
 <script>
     // Time slider functionality
     document.addEventListener('DOMContentLoaded', function() {
+        // Wait for all elements to be available in DOM
         const timeSlider = document.getElementById('timeSlider');
         const timeDisplay = document.getElementById('timeDisplay');
         const labelsContainer = document.getElementById('sliderLabelsContainer');
+        
+        // Check if all required elements exist before proceeding
+        if (!timeSlider || !timeDisplay || !labelsContainer) {
+            console.error('Required slider elements not found in the DOM');
+            return;
+        }
         
         // Set slider range to cover 24 hours (1440 minutes)
         timeSlider.min = 0;
