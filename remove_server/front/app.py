@@ -378,7 +378,7 @@ def workshop_diagram():
             'y': location.y_coordinate,
             'temperature': reading.temperature if reading else None,
             'humidity': reading.humidity if reading else None,
-            'humidity_std': reading.humidity_std if reading else None,
+            'humidity_std': None,
             'timestamp': reading.timestamp if reading else None
         }
         sensors_with_data.append(sensor_data)
