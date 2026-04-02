@@ -10,6 +10,8 @@
         <div class="col-md-12">
             <label for="timeSlider">Select Time:</label>
             <input type="range" class="form-control-range" id="timeSlider" min="0" max="1440" value="0" style="width: 100%;">
+            
+            <div id="timeDisplay" class="text-muted small mb-2"></div>
             <div class="d-flex justify-content-between" id="sliderLabelsContainer">
                 <!-- Labels will be added by JavaScript -->
             </div>
@@ -73,6 +75,7 @@
         
         // Update display with current time initially
         updateTimeDisplay(new Date());
+        fetchSensorDataForTime(new Date());
         
         timeSlider.addEventListener('input', function() {
             // Calculate the time based on slider position (each unit represents 1 minute back)
@@ -80,7 +83,7 @@
             
             // For reverse operation: higher slider value = more recent time
             // So we subtract the slider value from the max to get minutes back
-            const minutesBack = 1440 - currentValue;
+            const minutesBack = currentValue;
             
             const selectedTime = new Date();
             selectedTime.setMinutes(selectedTime.getMinutes() - minutesBack);
