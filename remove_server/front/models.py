@@ -16,6 +16,20 @@ class SensorReading(db.Model):
     puid = db.Column(db.String(64))
     source_ip = db.Column(db.String(50))
     destination_ip = db.Column(db.String(50))
+
+class SensorLocation(db.Model):
+    __tablename__ = 'sensor_locations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sensor_id = db.Column(db.Integer, nullable=False, unique=True)  # Links to SensorReading.sensor_id
+    description = db.Column(db.String(500), nullable=False)  # Description of where the sensor is located
+    x_coordinate = db.Column(db.Float, nullable=False)  # X coordinate on the workshop diagram
+    y_coordinate = db.Float, nullable=False)  # Y coordinate on the workshop diagram
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<SensorLocation sensor_id={self.sensor_id} description="{self.description}" x={self.x_coordinate} y={self.y_coordinate}>'
     
     def to_dict(self):
         return {

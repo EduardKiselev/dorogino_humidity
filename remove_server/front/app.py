@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, abort, jsonify
 from config import Config
 from models import db, SensorReading, Setting, SettingChangeLog, ControllerStatus, ScreenRecord
 from datetime import datetime, timezone, timedelta
@@ -206,36 +206,6 @@ def serve_screen(filename):
         abort(404)
     return send_from_directory(SCREEN_DIR, filename)
 
-# @app.route('/kiln-stats/export')
-# def kiln_stats_export():
-#     from flask import send_file
-#     import csv, io
-    
-#     # ... тот же код получения records, что в kiln_stats ...
-    
-#     # Генерация CSV
-#     output = io.StringIO()
-#     writer = csv.writer(output)
-#     writer.writerow(['screen_date', 'filename', 'row_num', 'ЗОНА', 'КТ', 'ПКТ', 'ИЗМ', 'ОШИБКА', 'ВЫКЛ'])
-    
-#     for rec in records:
-#         for idx, row in enumerate(rec.data_list, 1):
-#             writer.writerow([
-#                 rec.screen_date.strftime('%Y-%m-%d %H:%M:%S'),
-#                 rec.filename,
-#                 idx,
-#                 row.get('ЗОНА'), row.get('КТ'), row.get('ПКТ'),
-#                 row.get('ИЗМ'), row.get('ОШИБКА'), row.get('ВЫКЛ')
-#             ])
-    
-#     output.seek(0)
-#     return send_file(
-#         io.BytesIO(output.getvalue().encode('utf-8-sig')),
-#         mimetype='text/csv',
-#         as_attachment=True,
-#         download_name=f'kiln_stats_{datetime.now().strftime("%Y%m%d_%H%M")}.csv'
-#     )
-
 @app.route('/charts')
 def charts():
     """Страница графиков"""
@@ -356,6 +326,149 @@ def monitoring():
         servers_status=servers_status,
         is_admin=session.get('is_admin')
     )
+
+# Add these new routes to your app.py file
+
+@app.route('/workshop-diagram')
+def workshop_diagram():
+    """Page showing workshop diagram with sensor positions and time slider"""
+    # Get all sensor locations
+    sensor_locations = SensorLocation.query.all()
+    
+    # Get the most recent readings for each sensor
+    subquery = db.session.query(
+        SensorReading.sensor_id,
+        db.func.max(SensorReading.timestamp).label('max_time')
+    ).group_by(SensorReading.sensor_id).subquery()
+    
+    latest_readings = db.session.query(SensorReading).join(
+        subquery,
+        (SensorReading.sensor_id == subquery.c.sensor_id) &
+        (SensorReading.timestamp == subquery.c.max_time)
+    ).all()
+    
+    # Create a dictionary mapping sensor_id to its reading
+    readings_dict = {reading.sensor_id: reading for reading in latest_readings}
+    
+    # Combine sensor locations with their readings
+    sensors_with_data = []
+    for location in sensor_locations:
+        reading = readings_dict.get(location.sensor_id)
+        sensor_data = {
+            'sensor_id': location.sensor_id,
+            'description': location.description,
+            'x': location.x_coordinate,
+            'y': location.y_coordinate,
+            'temperature': reading.temperature if reading else None,
+            'humidity': reading.humidity if reading else None,
+            'timestamp': reading.timestamp if reading else None
+        }
+        sensors_with_data.append(sensor_data)
+    
+    return render_template(
+        'workshop_diagram.html',
+        sensors_with_data=sensors_with_data,
+        is_admin=session.get('is_admin')
+    )
+
+@app.route('/api/sensor-readings-by-time')
+def api_sensor_readings_by_time():
+    """API endpoint to get sensor readings at a specific time"""
+    time_str = request.args.get('time')
+    if not time_str:
+        return jsonify({'error': 'Time parameter is required'}), 400
+    
+    try:
+        target_time = datetime.fromisoformat(time_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid time format'}), 400
+    
+    # Find the closest readings to the requested time for each sensor
+    results = []
+    
+    for sensor_id in range(1, 6):  # Assuming sensors 1-5
+        # Find the reading closest to the target time for this sensor
+        closest_reading = db.session.query(SensorReading).filter(
+            SensorReading.sensor_id == sensor_id
+        ).order_by(
+            db.func.abs(db.func.extract('epoch', SensorReading.timestamp - target_time))
+        ).first()
+        
+        if closest_reading:
+            location = SensorLocation.query.filter_by(sensor_id=sensor_id).first()
+            if location:
+                results.append({
+                    'sensor_id': sensor_id,
+                    'temperature': closest_reading.temperature,
+                    'humidity': closest_reading.humidity,
+                    'timestamp': closest_reading.timestamp.isoformat(),
+                    'x': location.x_coordinate,
+                    'y': location.y_coordinate,
+                    'description': location.description
+                })
+    
+    return jsonify(results)
+
+@app.route('/admin/sensor-locations', methods=['GET', 'POST'])
+@admin_required
+def manage_sensor_locations():
+    """Admin page to manage sensor locations on the diagram"""
+    if request.method == 'POST':
+        try:
+            for i in range(1, 6):  # For sensors 1-5
+                description = request.form.get(f'description_{i}')
+                x_coord = request.form.get(f'x_{i}')
+                y_coord = request.form.get(f'y_{i}')
+                
+                if description and x_coord and y_coord:
+                    try:
+                        x = float(x_coord)
+                        y = float(y_coord)
+                        
+                        # Check if location already exists
+                        location = SensorLocation.query.filter_by(sensor_id=i).first()
+                        if location:
+                            # Update existing location
+                            location.description = description
+                            location.x_coordinate = x
+                            location.y_coordinate = y
+                        else:
+                            # Create new location
+                            location = SensorLocation(
+                                sensor_id=i,
+                                description=description,
+                                x_coordinate=x,
+                                y_coordinate=y
+                            )
+                            db.session.add(location)
+                    except ValueError:
+                        flash(f'Invalid coordinates for sensor {i}', 'danger')
+                        continue
+            
+            db.session.commit()
+            flash('Sensor locations updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating sensor locations: {str(e)}', 'danger')
+    
+    # Load existing locations
+    sensor_locations = {}
+    for i in range(1, 6):
+        location = SensorLocation.query.filter_by(sensor_id=i).first()
+        if location:
+            sensor_locations[i] = {
+                'description': location.description,
+                'x': location.x_coordinate,
+                'y': location.y_coordinate
+            }
+        else:
+            sensor_locations[i] = {
+                'description': f'Sensor {i} location description',
+                'x': 0.0,
+                'y': 0.0
+            }
+    
+    return render_template('admin/sensor_locations.html', sensor_locations=sensor_locations)
 
 @app.route('/settings', methods=['GET', 'POST'])
 @admin_required

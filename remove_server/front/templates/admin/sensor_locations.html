@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Sensor Locations{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Manage Sensor Locations</h1>
+    
+    <p>Set the location of each sensor on the workshop diagram. Coordinates are in percentage (0-100%) of the diagram size.</p>
+    
+    <form method="POST">
+        {% for i in range(1, 6) %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Sensor {{ i }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="description_{{ i }}">Description:</label>
+                    <input type="text" class="form-control" id="description_{{ i }}" name="description_{{ i }}" 
+                           value="{{ sensor_locations[i]['description'] }}" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="x_{{ i }}">X Coordinate (%):</label>
+                        <input type="number" class="form-control" id="x_{{ i }}" name="x_{{ i }}" 
+                               min="0" max="100" step="0.1" value="{{ sensor_locations[i]['x'] }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="y_{{ i }}">Y Coordinate (%):</label>
+                        <input type="number" class="form-control" id="y_{{ i }}" name="y_{{ i }}" 
+                               min="0" max="100" step="0.1" value="{{ sensor_locations[i]['y'] }}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-primary">Save Locations</button>
+        <a href="{{ url_for('workshop_diagram') }}" class="btn btn-secondary">View Diagram</a>
+    </form>
+</div>
+{% endblock %}
