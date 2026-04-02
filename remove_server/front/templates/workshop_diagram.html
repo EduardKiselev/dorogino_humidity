@@ -33,7 +33,8 @@
                         {% if sensor.temperature %}
                         T: {{ "%.1f"|format(sensor.temperature) }}°C<br>
                         H: {{ "%.1f"|format(sensor.humidity) }}%
-                        H_std: {{ "%.1f"|format(sensor.humidity_std) }}%
+                        {% if sensor.humidity_std is not none %}
+                        <br>σ: {{ "%.1f"|format(sensor.humidity_std) }}%
                         {% else %}
                         No data
                         {% endif %}
