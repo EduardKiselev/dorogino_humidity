@@ -29,7 +29,7 @@ class SensorReading(db.Model):
         }
     
     def __repr__(self):
-        return f'<SensorReading sensor_id={self.sensor_id} temp="{self.temperature}" hum={self.humidity}>'
+        return f'<SensorReading sensor_id={self.sensor_id} time={self.timestamp.isoformat()} temp="{self.temperature}" hum={self.humidity}>'
 class SensorLocation(db.Model):
     __tablename__ = 'sensor_locations'
     
