@@ -27,7 +27,9 @@ class SensorReading(db.Model):
             'source_ip': self.source_ip,
             'destination_ip': self.destination_ip
         }
-
+    
+    def __repr__(self):
+        return f'<SensorReading sensor_id={self.sensor_id} temp="{self.temperature}" hum={self.humidity}>'
 class SensorLocation(db.Model):
     __tablename__ = 'sensor_locations'
     
