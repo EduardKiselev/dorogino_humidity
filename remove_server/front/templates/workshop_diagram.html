@@ -1,49 +1,4 @@
-{% extends "base.html" %}
-
-{% block title %}Workshop Diagram{% endblock %}
-
-{% block content %}
-<div class="container-fluid">
-    <h1>Схема цеха</h1>
-    
-    <div class="row mb-3">
-        <div class="col-md-12">
-            <label for="timeSlider">Select Time:</label>
-            <input type="range" class="form-control-range" id="timeSlider" min="0" max="1440" value="0" style="width: 100%;">
-            <div class="d-flex justify-content-between" id="sliderLabelsContainer">
-                <!-- Labels will be added by JavaScript -->
-            </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-12">
-            <!-- Workshop diagram container -->
-            <div id="diagram-container" style="position: relative; width: 100%; height: 550px; /* Changed height to maintain aspect ratio */ border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='workshop-plan.png') }}'); background-size: contain; /* Changed to contain to show full image */ background-repeat: no-repeat; /* Prevent repeating */ background-position: center; /* Center the image */">
-                <!-- Sensor markers will be dynamically placed here -->
-                {% for sensor in sensors_with_data %}
-                <div class="sensor-marker" 
-                     data-sensor-id="{{ sensor.sensor_id }}"
-                     style="position: absolute; left: {{ sensor.x }}%; top: {{ sensor.y }}%; transform: translate(-50%, -50%); cursor: pointer;"
-                     title="{{ sensor.description }}">
-                    <div class="sensor-info-card" style="background: white; padding: 3px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.6em;">
-                        <strong>Sensor {{ sensor.sensor_id }}</strong><br>
-                        {% if sensor.temperature %}
-                        T: {{ "%.1f"|format(sensor.temperature) }}°C<br>
-                        H: {{ "%.1f"|format(sensor.humidity) }}%
-                        {% else %}
-                        No data
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-
-<script>
-    // Time slider functionality
+// Time slider functionality
     document.addEventListener('DOMContentLoaded', function() {
         const timeSlider = document.getElementById('timeSlider');
         const timeDisplay = document.getElementById('timeDisplay');
@@ -110,17 +65,42 @@
         }
         
         function updateDiagramWithData(sensors) {
-            // Clear existing sensor markers
-            document.querySelectorAll('.sensor-marker').forEach(marker => marker.remove());
+            // Get all sensor IDs that have data
+            const sensorIdsWithData = new Set(sensors.map(sensor => sensor.sensor_id));
             
-            // Add new markers based on the fetched data
-            sensors.forEach(sensor => {
-                const marker = document.createElement('div');
-                marker.className = 'sensor-marker';
-                marker.dataset.sensorId = sensor.sensor_id;
-                marker.style.cssText = `position: absolute; left: ${sensor.x}%; top: ${sensor.y}%; transform: translate(-50%, -50%); cursor: pointer;`;
-                marker.title = sensor.description;
+            // Get all sensor markers currently on the diagram
+            const allMarkers = document.querySelectorAll('.sensor-marker');
+            
+            // Update existing markers - keep those without data but mark as "No data"
+            allMarkers.forEach(marker => {
+                const sensorId = parseInt(marker.dataset.sensorId);
                 
+                if (!sensorIdsWithData.has(sensorId)) {
+                    // Sensor has no data at this time, update to show "No data"
+                    const card = marker.querySelector('.sensor-info-card');
+                    if (card) {
+                        const basicInfo = `<strong>Sensor ${sensorId}</strong><br>No data`;
+                        card.innerHTML = basicInfo;
+                    }
+                }
+            });
+            
+            // Update or add markers for sensors with data
+            sensors.forEach(sensor => {
+                let marker = document.querySelector(`.sensor-marker[data-sensor-id="${sensor.sensor_id}"]`);
+                
+                if (!marker) {
+                    // Create new marker if it doesn't exist
+                    marker = document.createElement('div');
+                    marker.className = 'sensor-marker';
+                    marker.dataset.sensorId = sensor.sensor_id;
+                    marker.style.cssText = `position: absolute; left: ${sensor.x}%; top: ${sensor.y}%; transform: translate(-50%, -50%); cursor: pointer;`;
+                    marker.title = sensor.description;
+                    
+                    document.getElementById('diagram-container').appendChild(marker);
+                }
+                
+                // Update the content of the marker with new data
                 marker.innerHTML = `
                     <div class="sensor-info-card" style="background: white; padding: 4px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.8em;">
                         <strong>Sensor ${sensor.sensor_id}</strong><br>
@@ -128,10 +108,6 @@
                         H: ${sensor.humidity ? sensor.humidity.toFixed(1) + '%' : 'No data'}
                     </div>
                 `;
-                
-                document.getElementById('diagram-container').appendChild(marker);
             });
         }
     });
-</script>
-{% endblock %}
