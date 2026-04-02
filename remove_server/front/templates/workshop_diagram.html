@@ -51,18 +51,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const labelsContainer = document.getElementById('sliderLabelsContainer');
     const diagramContainer = document.getElementById('diagram-container');
     
-    // Проверка наличия элементов
     if (!timeSlider || !timeDisplay || !labelsContainer || !diagramContainer) {
         console.error('Required elements not found in DOM');
         return;
     }
     
-    // Настройки слайдера: 0 = сейчас, 1440 = 24 часа назад
     timeSlider.min = 0;
     timeSlider.max = 1440;
     timeSlider.value = 0;
     
-    // Форматирование времени в GMT+7 (Asia/Bangkok)
+    // Форматирование времени в GMT+7 для отображения
     function formatGMT7(date) {
         return date.toLocaleString('ru-RU', {
             timeZone: 'Asia/Bangkok',
@@ -72,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Генерация меток времени (25 меток: 0..24 часа назад)
+    // Генерация меток времени
     const now = Date.now();
     for (let i = 0; i <= 24; i++) {
         const labelTime = new Date(now - i * 60 * 60 * 1000);
@@ -84,7 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
             hour12: false
         });
         
-        // Позиционирование: 0% = слева (сейчас), 100% = справа (24ч назад)
         label.style.position = 'absolute';
         label.style.left = `${(i / 24) * 100}%`;
         label.style.transform = 'translateX(-50%)';
@@ -96,7 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
         labelsContainer.appendChild(label);
     }
     
-    // Обновление интерфейса
     function updateUI(time) {
         updateTimeDisplay(time);
         fetchSensorDataForTime(time);
@@ -106,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         timeDisplay.textContent = 'Время: ' + formatGMT7(time);
     }
     
-    // Debounce для предотвращения частых запросов при прокрутке
+    // Debounce для предотвращения частых запросов
     let fetchTimeout;
     timeSlider.addEventListener('input', function() {
         clearTimeout(fetchTimeout);
@@ -117,9 +113,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     });
     
+    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТПРАВКИ ВРЕМЕНИ ===
+    function formatAsGMT7ISO(date) {
+        // Сдвигаем UTC-время на +7 часов для получения локального времени
+        const gmt7Time = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+        const iso = gmt7Time.toISOString();
+        // Заменяем 'Z' на '+07:00' для явного указания таймзоны
+        return iso.slice(0, -1) + '+07:00';
+    }
+    
     function fetchSensorDataForTime(time) {
-        // Отправляем время как UTC ISO-строку, бэкенд сам конвертирует в GMT+7
-        const timeStr = time.toISOString();
+        const timeStr = formatAsGMT7ISO(time);
         
         fetch(`/api/sensor-readings-by-time?time=${encodeURIComponent(timeStr)}`)
             .then(response => {
@@ -134,7 +138,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateDiagramWithData(sensors) {
-        // Удаляем только динамически добавленные маркеры, серверные оставляем как фолбэк
         diagramContainer.querySelectorAll('.sensor-marker.dynamic').forEach(m => m.remove());
         
         sensors.forEach(sensor => {
@@ -154,7 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            // Опционально: клик по маркеру показывает больше деталей
             marker.addEventListener('click', (e) => {
                 e.stopPropagation();
                 alert(`Sensor ${sensor.sensor_id}\n${sensor.description || ''}\nT: ${tempVal}, H: ${humVal}`);
@@ -164,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Инициализация: загрузка данных для текущего времени
+    // Инициализация
     updateUI(new Date(now));
 });
 </script>
