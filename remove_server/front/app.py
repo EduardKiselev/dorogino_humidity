@@ -11,6 +11,7 @@ from threading import Lock
 import subprocess
 import json
 import os
+from statistics import stdev, mean
 
 # Global scheduler instance
 scheduler = None
@@ -400,7 +401,7 @@ def api_sensor_readings_by_time():
     except ValueError:
         return jsonify({'error': 'Invalid time format'}), 400
     
-    print(target_time, local_time)
+  #  print(target_time, local_time)
     # Get all active sensor IDs from the SensorLocation table
     active_sensors = db.session.query(SensorLocation.sensor_id).filter_by(active=True).all()
     active_sensor_ids = [sensor.sensor_id for sensor in active_sensors]
@@ -419,11 +420,15 @@ def api_sensor_readings_by_time():
         ).order_by(SensorReading.timestamp).all()
         
         if readings_in_range:
-            print(readings_in_range)
+ #           print(readings_in_range)
             # Calculate averages for temperature and humidity
             total_temp = sum(r.temperature for r in readings_in_range if r.temperature is not None)
-            total_humidity = sum(r.humidity for r in readings_in_range if r.humidity is not None)
+
+            humidity_values = [r.humidity for r in readings_in_range if r.humidity is not None]
+            total_humidity = sum(humidity_values)
+            std_humidity = stdev(humidity_values) if len(humidity_values) >= 2 else 0.0
             
+
             count_temp = len([r for r in readings_in_range if r.temperature is not None])
             count_humidity = len([r for r in readings_in_range if r.humidity is not None])
             
@@ -439,6 +444,7 @@ def api_sensor_readings_by_time():
                     'sensor_id': sensor_id,
                     'temperature': avg_temp,
                     'humidity': avg_humidity,
+                    'humidity_std': std_humidity,
                     'timestamp': latest_reading.timestamp.isoformat(),
                     'x': location.x_coordinate,
                     'y': location.y_coordinate,
