@@ -390,25 +390,44 @@ def api_sensor_readings_by_time():
     except ValueError:
         return jsonify({'error': 'Invalid time format'}), 400
     
-    # Find the closest readings to the requested time for each sensor
+    # Get all active sensor IDs from the SensorLocation table
+    active_sensors = db.session.query(SensorLocation.sensor_id).filter_by(active=True).all()
+    active_sensor_ids = [sensor.sensor_id for sensor in active_sensors]
+    
+    # Find the closest readings to the requested time for each active sensor
     results = []
     
-    for sensor_id in range(1, 6):  # Assuming sensors 1-5
-        # Find the reading closest to the target time for this sensor
-        closest_reading = db.session.query(SensorReading).filter(
-            SensorReading.sensor_id == sensor_id
-        ).order_by(
-            db.func.abs(db.func.extract('epoch', SensorReading.timestamp - target_time))
-        ).first()
+    for sensor_id in active_sensor_ids:
+        # Get readings within 15 minutes before the target time
+        fifteen_minutes_before = target_time - timedelta(minutes=15)
         
-        if closest_reading:
+        readings_in_range = db.session.query(SensorReading).filter(
+            SensorReading.sensor_id == sensor_id,
+            SensorReading.timestamp >= fifteen_minutes_before,
+            SensorReading.timestamp <= target_time
+        ).order_by(SensorReading.timestamp).all()
+        
+        if readings_in_range:
+            # Calculate averages for temperature and humidity
+            total_temp = sum(r.temperature for r in readings_in_range if r.temperature is not None)
+            total_humidity = sum(r.humidity for r in readings_in_range if r.humidity is not None)
+            
+            count_temp = len([r for r in readings_in_range if r.temperature is not None])
+            count_humidity = len([r for r in readings_in_range if r.humidity is not None])
+            
+            avg_temp = total_temp / count_temp if count_temp > 0 else None
+            avg_humidity = total_humidity / count_humidity if count_humidity > 0 else None
+            
+            # Get the most recent timestamp in the range
+            latest_reading = max(readings_in_range, key=lambda x: x.timestamp)
+            
             location = SensorLocation.query.filter_by(sensor_id=sensor_id).first()
             if location:
                 results.append({
                     'sensor_id': sensor_id,
-                    'temperature': closest_reading.temperature,
-                    'humidity': closest_reading.humidity,
-                    'timestamp': closest_reading.timestamp.isoformat(),
+                    'temperature': avg_temp,
+                    'humidity': avg_humidity,
+                    'timestamp': latest_reading.timestamp.isoformat(),
                     'x': location.x_coordinate,
                     'y': location.y_coordinate,
                     'description': location.description
