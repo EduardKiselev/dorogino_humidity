@@ -24,7 +24,7 @@ class SensorLocation(db.Model):
     sensor_id = db.Column(db.Integer, nullable=False, unique=True)  # Links to SensorReading.sensor_id
     description = db.Column(db.String(500), nullable=False)  # Description of where the sensor is located
     x_coordinate = db.Column(db.Float, nullable=False)  # X coordinate on the workshop diagram
-    y_coordinate = db.Float, nullable=False)  # Y coordinate on the workshop diagram
+    y_coordinate = db.Column(db.Float, nullable=False)  # Y coordinate on the workshop diagram
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
