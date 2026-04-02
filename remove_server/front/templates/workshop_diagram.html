@@ -19,7 +19,7 @@
     <div class="row">
         <div class="col-md-12">
             <!-- Workshop diagram container -->
-            <div id="diagram-container" style="position: relative; width: 100%; height: 450px; /* Changed height to maintain aspect ratio */ border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='workshop-plan.png') }}'); background-size: contain; /* Changed to contain to show full image */ background-repeat: no-repeat; /* Prevent repeating */ background-position: center; /* Center the image */">
+            <div id="diagram-container" style="position: relative; width: 100%; height: 550px; /* Changed height to maintain aspect ratio */ border: 1px solid #ccc; background-image: url('{{ url_for('static', filename='workshop-plan.png') }}'); background-size: contain; /* Changed to contain to show full image */ background-repeat: no-repeat; /* Prevent repeating */ background-position: center; /* Center the image */">
                 <!-- Sensor markers will be dynamically placed here -->
                 {% for sensor in sensors_with_data %}
                 <div class="sensor-marker" 
