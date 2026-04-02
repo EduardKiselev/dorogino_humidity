@@ -450,6 +450,7 @@ def api_sensor_readings_by_time():
                     'y': location.y_coordinate,
                     'description': location.description
                 })
+    print(results)
     return jsonify(results)
 
 @app.route('/admin/sensor-locations', methods=['GET', 'POST'])
