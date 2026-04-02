@@ -9,7 +9,7 @@
     <div class="row mb-3">
         <div class="col-md-12">
             <label for="timeSlider">Select Time:</label>
-            <input type="range" class="form-control-range" id="timeSlider" min="0" max="100" value="100">
+            <input type="range" class="form-control-range" id="timeSlider" min="0" max="100" value="500">
             <div class="d-flex justify-content-between">
                 <span id="timeDisplay">Current Time</span>
             </div>
@@ -41,70 +41,77 @@
         </div>
     </div>
 
-    <script>
-        // Time slider functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const timeSlider = document.getElementById('timeSlider');
-            const timeDisplay = document.getElementById('timeDisplay');
+
+<script>
+    // Time slider functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        
+        // Set slider range to cover a reasonable time period (e.g., last 24 hours)
+        timeSlider.min = 0;
+        timeSlider.max = 144; // 24 hours * 6 (each unit = 10 minutes)
+        timeSlider.value = 0; // Default to most recent time
+        
+        // Update display with current time initially
+        updateTimeDisplay(new Date());
+        
+        timeSlider.addEventListener('input', function() {
+            // Calculate the time based on slider position (each unit represents 10 minutes back)
+            const currentValue = timeSlider.value;
             
-            // Update display with current time initially
-            updateTimeDisplay(new Date());
+            // Calculate how many minutes back from now
+            const minutesBack = currentValue * 10; // Each slider unit = 10 minutes
             
-            timeSlider.addEventListener('input', function() {
-                // Calculate the time based on slider position (assuming it represents hours back)
-                const maxValue = timeSlider.max;
-                const currentValue = timeSlider.value;
-                
-                // Calculate how many minutes back from now
-                const minutesBack = (maxValue - currentValue) * 10; // Adjust multiplier as needed
-                
-                const selectedTime = new Date();
-                selectedTime.setMinutes(selectedTime.getMinutes() - minutesBack);
-                
-                updateTimeDisplay(selectedTime);
-                
-                // Fetch sensor data for the selected time
-                fetchSensorDataForTime(selectedTime);
-            });
+            const selectedTime = new Date();
+            selectedTime.setMinutes(selectedTime.getMinutes() - minutesBack);
             
-            function updateTimeDisplay(time) {
-                timeDisplay.textContent = time.toLocaleString();
-            }
+            updateTimeDisplay(selectedTime);
             
-            function fetchSensorDataForTime(time) {
-                // Format time as ISO string for API request
-                const timeStr = time.toISOString();
-                
-                fetch(`/api/sensor-readings-by-time?time=${encodeURIComponent(timeStr)}`)
-                    .then(response => response.json())
-                    .then(data => updateDiagramWithData(data))
-                    .catch(error => console.error('Error fetching sensor data:', error));
-            }
-            
-            function updateDiagramWithData(sensors) {
-                // Clear existing sensor markers
-                document.querySelectorAll('.sensor-marker').forEach(marker => marker.remove());
-                
-                // Add new markers based on the fetched data
-                sensors.forEach(sensor => {
-                    const marker = document.createElement('div');
-                    marker.className = 'sensor-marker';
-                    marker.dataset.sensorId = sensor.sensor_id;
-                    marker.style.cssText = `position: absolute; left: ${sensor.x}%; top: ${sensor.y}%; transform: translate(-50%, -50%); cursor: pointer;`;
-                    marker.title = sensor.description;
-                    
-                    marker.innerHTML = `
-                        <div class="sensor-info-card" style="background: white; padding: 4px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.8em;">
-                            <strong>Sensor ${sensor.sensor_id}</strong><br>
-                            T: ${sensor.temperature ? sensor.temperature.toFixed(1) + '°C' : 'No data'}<br>
-                            H: ${sensor.humidity ? sensor.humidity.toFixed(1) + '%' : 'No data'}
-                        </div>
-                    `;
-                    
-                    document.getElementById('diagram-container').appendChild(marker);
-                });
-            }
+            // Fetch sensor data for the selected time
+            fetchSensorDataForTime(selectedTime);
         });
-    </script>
-</div>
-{% endblock %}
+        
+        function updateTimeDisplay(time) {
+            // Convert time to local display format accounting for GMT+7 offset
+            const localTime = new Date(time.getTime() - 7*60*60*1000); // Adjust for GMT+7
+            timeDisplay.textContent = localTime.toLocaleString();
+        }
+        
+        function fetchSensorDataForTime(time) {
+            // Format time as ISO string for API request
+            // Convert local JS time to GMT+7 before sending to API
+            const gmt7Time = new Date(time.getTime() + 7*60*60*1000); // Convert to GMT+7
+            const timeStr = gmt7Time.toISOString();
+            
+            fetch(`/api/sensor-readings-by-time?time=${encodeURIComponent(timeStr)}`)
+                .then(response => response.json())
+                .then(data => updateDiagramWithData(data))
+                .catch(error => console.error('Error fetching sensor data:', error));
+        }
+        
+        function updateDiagramWithData(sensors) {
+            // Clear existing sensor markers
+            document.querySelectorAll('.sensor-marker').forEach(marker => marker.remove());
+            
+            // Add new markers based on the fetched data
+            sensors.forEach(sensor => {
+                const marker = document.createElement('div');
+                marker.className = 'sensor-marker';
+                marker.dataset.sensorId = sensor.sensor_id;
+                marker.style.cssText = `position: absolute; left: ${sensor.x}%; top: ${sensor.y}%; transform: translate(-50%, -50%); cursor: pointer;`;
+                marker.title = sensor.description;
+                
+                marker.innerHTML = `
+                    <div class="sensor-info-card" style="background: white; padding: 4px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.8em;">
+                        <strong>Sensor ${sensor.sensor_id}</strong><br>
+                        T: ${sensor.temperature ? sensor.temperature.toFixed(1) + '°C' : 'No data'}<br>
+                        H: ${sensor.humidity ? sensor.humidity.toFixed(1) + '%' : 'No data'}
+                    </div>
+                `;
+                
+                document.getElementById('diagram-container').appendChild(marker);
+            });
+        }
+    });
+</script>
