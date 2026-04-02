@@ -1,113 +1,46 @@
-// Time slider functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const timeSlider = document.getElementById('timeSlider');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const labelsContainer = document.getElementById('sliderLabelsContainer');
+function updateDiagramWithData(sensors) {
+        // Get all sensor IDs that have data
+        const sensorIdsWithData = new Set(sensors.map(sensor => sensor.sensor_id));
         
-        // Set slider range to cover 24 hours (1440 minutes)
-        timeSlider.min = 0;
-        timeSlider.max = 1440; // 24 hours in minutes
-        timeSlider.value = 0; // Default to showing most recent time (right side)
+        // Get all sensor markers currently on the diagram
+        const allMarkers = document.querySelectorAll('.sensor-marker');
         
-        // Generate hourly labels
-        const now = new Date();
-        for (let i = 0; i <= 24; i++) {
-            const labelTime = new Date(now);
-            labelTime.setHours(now.getHours() - i); // Going backwards in time
+        // Update existing markers - keep those without data but mark as "No data"
+        allMarkers.forEach(marker => {
+            const sensorId = parseInt(marker.dataset.sensorId);
             
-            const label = document.createElement('span');
-            label.textContent = labelTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            label.style.position = 'absolute';
-            label.style.left = `${(i / 24) * 100}%`;
-            label.style.transform = 'translateX(-50%)';
-            label.style.fontSize = '0.7em';
-            label.style.whiteSpace = 'nowrap';
-            
-            labelsContainer.appendChild(label);
-        }
-        
-        // Update display with current time initially
-        updateTimeDisplay(new Date());
-        
-        timeSlider.addEventListener('input', function() {
-            // Calculate the time based on slider position (each unit represents 1 minute back)
-            const currentValue = parseInt(timeSlider.value);
-            
-            // For reverse operation: higher slider value = more recent time
-            // So we subtract the slider value from the max to get minutes back
-            const minutesBack = 1440 - currentValue;
-            
-            const selectedTime = new Date();
-            selectedTime.setMinutes(selectedTime.getMinutes() - minutesBack);
-            
-            updateTimeDisplay(selectedTime);
-            
-            // Fetch sensor data for the selected time
-            fetchSensorDataForTime(selectedTime);
+            if (!sensorIdsWithData.has(sensorId)) {
+                // Sensor has no data at this time, update to show "No data"
+                const card = marker.querySelector('.sensor-info-card');
+                if (card) {
+                    const basicInfo = `<strong>Sensor ${sensorId}</strong><br>No data`;
+                    card.innerHTML = basicInfo;
+                }
+            }
         });
         
-        function updateTimeDisplay(time) {
-            // Convert time to local display format accounting for GMT+7 offset
-            const localTime = new Date(time.getTime() - 7*60*60*1000); // Adjust for GMT+7
-            timeDisplay.textContent = localTime.toLocaleString();
-        }
-        
-        function fetchSensorDataForTime(time) {
-            // Format time as ISO string for API request
-            // Convert local JS time to GMT+7 before sending to API
-            const gmt7Time = new Date(time.getTime() + 7*60*60*1000); // Convert to GMT+7
-            const timeStr = gmt7Time.toISOString();
+        // Update or add markers for sensors with data
+        sensors.forEach(sensor => {
+            let marker = document.querySelector(`.sensor-marker[data-sensor-id="${sensor.sensor_id}"]`);
             
-            fetch(`/api/sensor-readings-by-time?time=${encodeURIComponent(timeStr)}`)
-                .then(response => response.json())
-                .then(data => updateDiagramWithData(data))
-                .catch(error => console.error('Error fetching sensor data:', error));
-        }
-        
-        function updateDiagramWithData(sensors) {
-            // Get all sensor IDs that have data
-            const sensorIdsWithData = new Set(sensors.map(sensor => sensor.sensor_id));
-            
-            // Get all sensor markers currently on the diagram
-            const allMarkers = document.querySelectorAll('.sensor-marker');
-            
-            // Update existing markers - keep those without data but mark as "No data"
-            allMarkers.forEach(marker => {
-                const sensorId = parseInt(marker.dataset.sensorId);
+            if (!marker) {
+                // Create new marker if it doesn't exist
+                marker = document.createElement('div');
+                marker.className = 'sensor-marker';
+                marker.dataset.sensorId = sensor.sensor_id;
+                marker.style.cssText = `position: absolute; left: ${sensor.x}%; top: ${sensor.y}%; transform: translate(-50%, -50%); cursor: pointer;`;
+                marker.title = sensor.description;
                 
-                if (!sensorIdsWithData.has(sensorId)) {
-                    // Sensor has no data at this time, update to show "No data"
-                    const card = marker.querySelector('.sensor-info-card');
-                    if (card) {
-                        const basicInfo = `<strong>Sensor ${sensorId}</strong><br>No data`;
-                        card.innerHTML = basicInfo;
-                    }
-                }
-            });
+                document.getElementById('diagram-container').appendChild(marker);
+            }
             
-            // Update or add markers for sensors with data
-            sensors.forEach(sensor => {
-                let marker = document.querySelector(`.sensor-marker[data-sensor-id="${sensor.sensor_id}"]`);
-                
-                if (!marker) {
-                    // Create new marker if it doesn't exist
-                    marker = document.createElement('div');
-                    marker.className = 'sensor-marker';
-                    marker.dataset.sensorId = sensor.sensor_id;
-                    marker.style.cssText = `position: absolute; left: ${sensor.x}%; top: ${sensor.y}%; transform: translate(-50%, -50%); cursor: pointer;`;
-                    marker.title = sensor.description;
-                    
-                    document.getElementById('diagram-container').appendChild(marker);
-                }
-                
-                // Update the content of the marker with new data
-                marker.innerHTML = `
-                    <div class="sensor-info-card" style="background: white; padding: 4px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.8em;">
-                        <strong>Sensor ${sensor.sensor_id}</strong><br>
-                        T: ${sensor.temperature ? sensor.temperature.toFixed(1) + '°C' : 'No data'}<br>
-                        H: ${sensor.humidity ? sensor.humidity.toFixed(1) + '%' : 'No data'}
-                    </div>
-                `;
-            });
-        }
-    });
+            // Update the content of the marker with new data
+            marker.innerHTML = `
+                <div class="sensor-info-card" style="background: white; padding: 4px; border-radius: 4px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.8em;">
+                    <strong>Sensor ${sensor.sensor_id}</strong><br>
+                    T: ${sensor.temperature ? sensor.temperature.toFixed(1) + '°C' : 'No data'}<br>
+                    H: ${sensor.humidity ? sensor.humidity.toFixed(1) + '%' : 'No data'}
+                </div>
+            `;
+        });
+    }
