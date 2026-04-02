@@ -387,10 +387,11 @@ def api_sensor_readings_by_time():
     
     try:
         target_time = datetime.fromisoformat(time_str)
+        local_time = target_time.astimezone(target_tz)
     except ValueError:
         return jsonify({'error': 'Invalid time format'}), 400
     
-    print(target_time)
+    print(target_time, local_time)
     # Get all active sensor IDs from the SensorLocation table
     active_sensors = db.session.query(SensorLocation.sensor_id).filter_by(active=True).all()
     active_sensor_ids = [sensor.sensor_id for sensor in active_sensors]
@@ -400,12 +401,12 @@ def api_sensor_readings_by_time():
     
     for sensor_id in active_sensor_ids:
         # Get readings within 15 minutes before the target time
-        fifteen_minutes_before = target_time - timedelta(minutes=15)
+        fifteen_minutes_before = local_time - timedelta(minutes=15)
         
         readings_in_range = db.session.query(SensorReading).filter(
             SensorReading.sensor_id == sensor_id,
             SensorReading.timestamp >= fifteen_minutes_before,
-            SensorReading.timestamp <= target_time
+            SensorReading.timestamp <= local_time
         ).order_by(SensorReading.timestamp).all()
         
         if readings_in_range:
