@@ -723,3 +723,8 @@ if __name__ == '__main__':
         init_scheduler()
         
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve static files from the static folder"""
+    return send_from_directory('static', filename)
