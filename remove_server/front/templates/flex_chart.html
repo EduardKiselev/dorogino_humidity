@@ -4,14 +4,20 @@
 <div class="card mb-3">
   <div class="card-body">
     <form id="chartForm" class="row g-3">
-      <div class="col-md-3">
-        <label class="form-label">С даты</label>
-        <input type="datetime-local" class="form-control" name="date_from" id="dateFrom" required lang="en-GB" style="font-variant-numeric: tabular-nums;">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">По дату</label>
-        <input type="datetime-local" class="form-control" name="date_to" id="dateTo" required>
-      </div>
+        <div class="col-md-3">
+            <label class="form-label">С даты</label>
+            <div class="input-group">
+                <input type="date" class="form-control" id="dateFromDate" required>
+                <input type="time" class="form-control" id="dateFromTime" required step="60">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">По дату</label>
+            <div class="input-group">
+                <input type="date" class="form-control" id="dateToDate" required>
+                <input type="time" class="form-control" id="dateToTime" required step="60">
+            </div>
+        </div>
       <div class="col-md-3">
         <label class="form-label">Сенсоры</label>
         <div class="border rounded p-2" style="max-height:100px;overflow-y:auto">
@@ -175,10 +181,14 @@ function buildChart(data, sensors, metrics) {
                     mode: 'index',
                     intersect: false,
                     // 👇 Фиксируем позицию
-                    position: 'absolute',
-                    xAlign: 'left',
-                    yAlign: 'top',
-                    // 👇 Смещение от краёв (опционально)
+                    position: function(context, eventPosition) {
+                        return { x: 15, y: 15 };  // 15px от левого верхнего угла
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#000',
+                    bodyColor: '#000',
+                    borderColor: '#dee2e6',
+                    borderWidth: 1,
                     padding: 10,
                     callbacks: {
                         title: (items) => items.length ? fmtDate(items[0].parsed.x) : '',
@@ -199,22 +209,68 @@ function buildChart(data, sensors, metrics) {
 
 async function fetchData() {
     const form = document.getElementById('chartForm');
-    const params = new URLSearchParams(new FormData(form));
+    
+    // 👇 Собираем из раздельных полей
+    const dateFrom = document.getElementById('dateFromDate').value;
+    const timeFrom = document.getElementById('dateFromTime').value;
+    const dateTo = document.getElementById('dateToDate').value;
+    const timeTo = document.getElementById('dateToTime').value;
+    
+    if (!dateFrom || !timeFrom || !dateTo || !timeTo) {
+        alert('Заполните все поля даты и времени');
+        return;
+    }
+    
+    const params = new URLSearchParams();
+    params.set('date_from', `${dateFrom}T${timeFrom}`);
+    params.set('date_to', `${dateTo}T${timeTo}`);
+    
+    // Добавляем чекбоксы
+    const sensors = [...form.querySelectorAll('[name="sensors"]:checked')].map(el => +el.value);
+    const metrics = [...form.querySelectorAll('[name="metrics"]:checked')].map(el => el.value);
+    sensors.forEach(s => params.append('sensors', s));
+    metrics.forEach(m => params.append('metrics', m));
     
     try {
         const res = await fetch(`/api/flex-chart-data?${params}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        
-        const sensors = [...form.querySelectorAll('[name="sensors"]:checked')].map(el => +el.value);
-        const metrics = [...form.querySelectorAll('[name="metrics"]:checked')].map(el => el.value);
-        
         buildChart(data, sensors, metrics);
     } catch (err) {
         console.error('Fetch error:', err);
         alert(`Ошибка: ${err.message}`);
     }
 }
+
+// Инициализация: устанавливаем значения и формат 24ч
+window.onload = () => {
+    const now = new Date();
+    const yesterday = new Date(now - 24*60*60*1000);
+    
+    // date input: YYYY-MM-DD
+    document.getElementById('dateFromDate').value = formatDateISO(yesterday);
+    document.getElementById('dateToDate').value = formatDateISO(now);
+    
+    // time input: HH:MM (24-часовой формат)
+    document.getElementById('dateFromTime').value = formatTime24(yesterday);
+    document.getElementById('dateToTime').value = formatTime24(now);
+    
+    fetchData();
+};
+
+function formatDateISO(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function formatTime24(date) {
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${min}`;
+}
+
 
 document.getElementById('chartForm').onsubmit = (e) => { e.preventDefault(); fetchData(); };
 
