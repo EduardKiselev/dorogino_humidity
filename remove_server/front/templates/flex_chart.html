@@ -172,19 +172,24 @@ function buildChart(data, sensors, metrics) {
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
-                    // 👇 Показывать все метрики в тултипе
                     mode: 'index',
                     intersect: false,
-                    filter: function(tooltipItem, allItems) {
-                        if (allItems.length === 0) return true;
-                        const referenceX = allItems[0].parsed.x;
-                        const windowMs = 90000; // 1.5 минуты
-                        return Math.abs(tooltipItem.parsed.x - referenceX) <= windowMs;
-                    },
                     callbacks: {
                         title: (items) => items.length ? fmtDate(items[0].parsed.x) : '',
-                        label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}`,
-                        itemSort: (a, b) => (a.dataset.label || '').localeCompare(b.dataset.label || '')
+                        label: (ctx) => {
+                            const label = ctx.dataset.label || '';
+                            const value = ctx.parsed.y;
+                            // Показываем только если значение есть
+                            return value !== null && value !== undefined 
+                                ? `${label}: ${value.toFixed(1)}` 
+                                : null; // null скрывает строку в тултипе
+                        },
+                        itemSort: (a, b) => {
+                            // Сначала сортируем по датчику, потом по метрике
+                            const aLabel = a.dataset.label || '';
+                            const bLabel = b.dataset.label || '';
+                            return aLabel.localeCompare(bLabel);
+                        }
                     }
                 }
             }
