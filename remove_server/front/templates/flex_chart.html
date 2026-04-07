@@ -185,7 +185,7 @@ function buildChart(data, sensors, metrics) {
                         const currentX = tooltipItem.parsed?.x;
                         if (currentX === undefined) return false;
                         
-                        const windowMs = 90000; // 👈 90 секунд = 1.5 минуты
+                        const windowMs = 180000; // 👈 90 секунд = 1.5 минуты
                         return Math.abs(currentX - referenceX) <= windowMs;
                     },
                     callbacks: {
