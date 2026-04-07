@@ -127,28 +127,31 @@ function buildChart(data, sensors, metrics) {
         return;
     }
     
-    // Расчёт диапазона X
-    const allX = [];
-    for (const ds of datasets) {
-        if (ds.data && Array.isArray(ds.data)) {
-            for (const point of ds.data) {
-                if (point.x !== null && !isNaN(point.x)) {
-                    allX.push(point.x);
-                }
-            }
-        }
-    }
-    
     if (allX.length === 0) {
         console.error('❌ Не найдено валидных точек для оси X');
         return;
     }
     
+    // 1. Константы и расчет границ
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 2 часа в миллисекундах
+    const allX = datasets.flatMap(d => d.data.map(p => p.x));
     const minX = Math.min(...allX);
     const maxX = Math.max(...allX);
     const padding = (maxX - minX) * 0.02 || 3600000;
 
-    
+    // 2. Функция для округления вниз до четного часа (00:00, 02:00...)
+    function getEvenHourStart(time) {
+        const d = new Date(time);
+        const hour = d.getHours();
+        // Вычитаем остаток (1 -> 0, 3 -> 2, 15 -> 14)
+        d.setHours(hour - (hour % 2), 0, 0, 0); 
+        return d.getTime();
+    }
+
+    // 3. Вычисляем границы
+    // min округляем до четного часа, max оставляем с отступом
+    const scaleMin = getEvenHourStart(minX - padding);
+    const scaleMax = maxX + padding;
     
     chart = new Chart(ctx, {
         type: 'line',
@@ -171,30 +174,19 @@ function buildChart(data, sensors, metrics) {
                     min: minX - padding,
                     max: maxX + padding,
                     ticks: { 
+                        stepSize: TWO_HOURS_MS, // 👈 Жесткий шаг 2 часа
                         callback: (val) => {
                             const d = new Date(val);
-                            const h = d.getHours();
-                            // 👇 Показываем метки только для чётных часов
-                            return h % 2 === 0 ? fmtDate(val) : '';
-                        },
-                        maxTicksLimit: 20
+                            // Формат: 06.04, 02:00
+                            const dd = String(d.getDate()).padStart(2, '0');
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const hh = String(d.getHours()).padStart(2, '0');
+                            return `${dd}.${mm}, ${hh}:00`;
+                        }
                     },
                     title: { display: true, text: 'Время' },
-                    // 👇 Вертикальные линии сетки через каждые 2 часа
                     grid: {
-                        color: (context) => {
-                            const tick = context.tick?.value;
-                            if (!tick) return 'rgba(0,0,0,0.1)';
-                            const h = new Date(tick).getHours();
-                            // 👇 Линии только для чётных часов, чуть жирнее
-                            return h % 2 === 0 ? 'rgba(0,0,0,0.15)' : 'transparent';
-                        },
-                        lineWidth: (context) => {
-                            const tick = context.tick?.value;
-                            if (!tick) return 1;
-                            const h = new Date(tick).getHours();
-                            return h % 2 === 0 ? 1 : 0;
-                        }
+                        color: 'rgba(0,0,0,0.1)' // Теперь сетка совпадает с тиками
                     }
                 },
                 yTemp: {
