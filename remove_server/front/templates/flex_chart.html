@@ -174,22 +174,30 @@ function buildChart(data, sensors, metrics) {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    filter: function(tooltipItem, index, allItems) {
+                        // Если точка одна или allItems не определён — показываем
+                        if (!allItems || allItems.length <= 1) return true;
+                        
+                        // Опорная точка — ближайшая к курсору (первая в списке)
+                        const referenceX = allItems[0].parsed?.x;
+                        if (referenceX === undefined) return true;
+                        
+                        const currentX = tooltipItem.parsed?.x;
+                        if (currentX === undefined) return false;
+                        
+                        const windowMs = 90000; // 👈 90 секунд = 1.5 минуты
+                        return Math.abs(currentX - referenceX) <= windowMs;
+                    },
                     callbacks: {
                         title: (items) => items.length ? fmtDate(items[0].parsed.x) : '',
                         label: (ctx) => {
                             const label = ctx.dataset.label || '';
                             const value = ctx.parsed.y;
-                            // Показываем только если значение есть
                             return value !== null && value !== undefined 
                                 ? `${label}: ${value.toFixed(1)}` 
-                                : null; // null скрывает строку в тултипе
+                                : null;
                         },
-                        itemSort: (a, b) => {
-                            // Сначала сортируем по датчику, потом по метрике
-                            const aLabel = a.dataset.label || '';
-                            const bLabel = b.dataset.label || '';
-                            return aLabel.localeCompare(bLabel);
-                        }
+                        itemSort: (a, b) => (a.dataset.label || '').localeCompare(b.dataset.label || '')
                     }
                 }
             }
