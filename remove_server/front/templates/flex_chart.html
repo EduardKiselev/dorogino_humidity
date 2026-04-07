@@ -46,48 +46,43 @@
 
 
 {% block extra_js %}
-<!-- Chart.js + адаптер для времени + luxon -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const ctx = document.getElementById('flexChart');
 let chart = null;
 const colors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf'];
 
+// Форматирование даты для тултипа
+function fmtDate(ts) {
+    const d = new Date(ts);
+    return d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+}
+
 function buildChart(data, sensors, metrics) {
     console.log('Building chart:', {dataCount: data.length, sensors, metrics});
-    
-    if (chart) {
-        chart.destroy();
-        console.log('Previous chart destroyed');
-    }
+    if (chart) chart.destroy();
     
     const datasets = [];
     let colorIdx = 0;
     
     sensors.forEach(sid => {
         const sensorData = data.filter(d => d.sensor_id == sid);
-        console.log(`Sensor ${sid}: ${sensorData.length} points`);
-        
         metrics.forEach(metric => {
             const points = sensorData
                 .filter(d => d[metric] !== null && d[metric] !== undefined)
                 .map(d => ({
-                    x: d.timestamp,  // ISO string, luxon разберёт
-                    y: +d[metric]    // гарантируем число
+                    x: new Date(d.timestamp).getTime(), // числовой таймстамп
+                    y: +d[metric]
                 }));
             
             if (points.length) {
                 const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
                 datasets.push({
                     label,
-                    data: points,
+                     points,
                     borderColor: colors[colorIdx % colors.length],
-                    backgroundColor: colors[colorIdx % colors.length] + '20',
-                    tension: 0.3,
-                    pointRadius: 1,
+                    tension: 0.2,
+                    pointRadius: 0,
                     yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
                 });
                 colorIdx++;
@@ -95,96 +90,88 @@ function buildChart(data, sensors, metrics) {
         });
     });
     
-    console.log(`Creating chart with ${datasets.length} datasets`);
-    
     if (datasets.length === 0) {
-        alert('Нет данных для отображения. Проверьте фильтры.');
+        alert('Нет данных для отображения');
         return;
     }
     
     chart = new Chart(ctx, {
         type: 'line',
-        data: { datasets },
+         { datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false },
             scales: {
-                x: { 
-                    type: 'time', 
-                    time: { unit: 'hour', tooltipFormat: 'dd.MM HH:mm' }, 
-                    title: { display: true, text: 'Время' } 
+                x: {
+                    type: 'linear',
+                    ticks: {
+                        callback: (val) => fmtDate(val)
+                    },
+                    title: { display: true, text: 'Время' }
                 },
-                yTemp: { 
-                    type: 'linear', 
-                    display: datasets.some(d => d.yAxisID === 'yTemp'), 
-                    position: 'left', 
-                    title: { display: true, text: 'Температура, °C' }, 
-                    grid: { drawOnChartArea: false } 
+                yTemp: {
+                    type: 'linear',
+                    display: datasets.some(d => d.yAxisID === 'yTemp'),
+                    position: 'left',
+                    title: { display: true, text: 'Температура, °C' },
+                    grid: { drawOnChartArea: false }
                 },
-                yHum: { 
-                    type: 'linear', 
-                    display: datasets.some(d => d.yAxisID === 'yHum'), 
-                    position: 'right', 
-                    title: { display: true, text: 'Влажность, %' }, 
-                    min: 0, max: 100 
+                yHum: {
+                    type: 'linear',
+                    display: datasets.some(d => d.yAxisID === 'yHum'),
+                    position: 'right',
+                    title: { display: true, text: 'Влажность, %' },
+                    min: 0, max: 100
                 }
             },
-            plugins: { 
-                legend: { position: 'bottom', labels: { usePointStyle: true } },
-                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}` } }
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}`,
+                        title: (items) => fmtDate(items[0].parsed.x)
+                    }
+                }
             }
         }
     });
-    console.log('Chart created successfully');
 }
 
 async function fetchData() {
     const form = document.getElementById('chartForm');
     const params = new URLSearchParams(new FormData(form));
-    console.log('Fetching data with params:', params.toString());
     
     try {
         const res = await fetch(`/api/flex-chart-data?${params}`);
-        console.log('Response status:', res.status);
-        
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || `HTTP ${res.status}`);
-        }
-        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        console.log('Received data:', data.length, 'points');
         
         const sensors = [...form.querySelectorAll('[name="sensors"]:checked')].map(el => +el.value);
         const metrics = [...form.querySelectorAll('[name="metrics"]:checked')].map(el => el.value);
         
         buildChart(data, sensors, metrics);
     } catch (err) {
-        console.error('Fetch error:', err);
+        console.error(err);
         alert(`Ошибка: ${err.message}`);
     }
 }
 
-document.getElementById('chartForm').onsubmit = (e) => { 
-    e.preventDefault(); 
-    fetchData(); 
-};
+document.getElementById('chartForm').onsubmit = (e) => { e.preventDefault(); fetchData(); };
 
 document.getElementById('btnExport').onclick = async () => {
     const form = document.getElementById('chartForm');
     const params = new URLSearchParams(new FormData(form));
     const res = await fetch(`/api/flex-chart-data?${params}`);
     const data = await res.json();
-    
-    if (!data.length) return alert('Нет данных для экспорта');
+    if (!data.length) return alert('Нет данных');
     
     const headers = ['timestamp', 'sensor_id', 'temperature', 'humidity'];
     const csv = [headers.join(';'), ...data.map(d => 
         [d.timestamp, d.sensor_id, d.temperature ?? '', d.humidity ?? ''].join(';')
     )].join('\n');
     
-    const blob = new Blob([csv], { type: 'text/plain' });
+    const blob = new Blob([csv], {type: 'text/plain'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `export_${Date.now()}.txt`;
@@ -193,7 +180,6 @@ document.getElementById('btnExport').onclick = async () => {
 
 // Инициализация
 window.onload = () => {
-    console.log('Page loaded, initializing dates');
     const now = new Date(), yesterday = new Date(now - 24*60*60*1000);
     document.getElementById('dateTo').value = now.toISOString().slice(0,16);
     document.getElementById('dateFrom').value = yesterday.toISOString().slice(0,16);
