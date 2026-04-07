@@ -210,7 +210,8 @@ function buildChart(data, sensors, metrics) {
                         
                         // Формируем контент
                         let title = tooltip.title?.[0] || '';
-                        const titleNum = Number(title);
+                        
+                        const titleNum = Number(String(title).replace(/,/g, ''));
                         if (title && !isNaN(titleNum) && titleNum > 1000000000) {  // > 1e9 = точно не год
                             title = fmtDate(titleNum);
                         }
