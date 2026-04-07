@@ -79,7 +79,7 @@ const colors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a6
 
 function fmtDate(ts) {
     const d = new Date(ts);
-    return d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+    return d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Novosibirsk'});
 }
 
 function buildChart(data, sensors, metrics) {
@@ -177,7 +177,7 @@ function buildChart(data, sensors, metrics) {
                     min: minX - padding,
                     max: maxX + padding,
                     ticks: { 
-                        stepSize: TWO_HOURS_MS, // 👈 Жесткий шаг 2 часа
+                        stepSize: TWO_HOURS_MS, // Жесткий шаг 2 часа
                         callback: (val) => {
                             const d = new Date(val);
                             // Формат: 06.04, 02:00
@@ -200,7 +200,6 @@ function buildChart(data, sensors, metrics) {
                     min: 30,
                     max: 42,
                     beginAtZero: false,
-                    // 👇 Горизонтальные линии с шагом 2
                     ticks: {
                         stepSize: 2,
                         callback: (val) => val + '°'
@@ -218,7 +217,7 @@ function buildChart(data, sensors, metrics) {
                     max: 60,
                     ticks: {
                         stepSize: 5,
-                        callback: (val) => val + '°'
+                 //       callback: (val) => val
                     },
                     grid: {
                         drawOnChartArea: true,

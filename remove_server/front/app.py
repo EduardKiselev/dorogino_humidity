@@ -12,6 +12,7 @@ import subprocess
 import json
 import os
 from statistics import stdev, mean
+from collections import defaultdict
 
 # Global scheduler instance
 scheduler = None
@@ -315,7 +316,6 @@ def charts():
 def flex_chart():
     """Гибкий график с фильтрами"""
     sensor_ids = sorted([s.sensor_id for s in SensorReading.query.with_entities(SensorReading.sensor_id).distinct()])
-    print(sensor_ids)
     return render_template('flex_chart.html', sensor_ids=sensor_ids, is_admin=session.get('is_admin'))
 
 @app.route('/api/flex-chart-data')
@@ -346,15 +346,14 @@ def api_flex_chart_data():
     readings = query.order_by(SensorReading.timestamp).all()
     app.logger.info(f"Found {len(readings)} readings for flex chart")
     
-    # === Нормализация: отбрасываем секунды и агрегируем по минуте ===
-    from collections import defaultdict
+
     
     # Группируем: (sensor_id, timestamp_без_секунд) → список значений
     aggregated = defaultdict(lambda: {'temperatures': [], 'humidities': []})
     
     for r in readings:
-        # 👇 Обрезаем секунды: 2026-04-07T12:34:56 → 2026-04-07T12:34:00
-        ts_normalized = r.timestamp.replace(second=0, microsecond=0)
+        ts_local = r.timestamp.astimezone(target_tz)
+        ts_normalized = ts_local.timestamp.replace(second=0, microsecond=0) # Обрезаем секунды: 2026-04-07T12:34:56 → 2026-04-07T12:34:00
         key = (r.sensor_id, ts_normalized)
         
         if r.temperature is not None:
@@ -366,7 +365,7 @@ def api_flex_chart_data():
     data = []
     for (sensor_id, ts), values in aggregated.items():
         point = {
-            'timestamp': ts.isoformat(),  # 👈 Теперь без секунд
+            'timestamp': ts.isoformat(),
             'sensor_id': sensor_id
         }
         if 'temperature' in metrics and values['temperatures']:
