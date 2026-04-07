@@ -189,7 +189,23 @@ function buildChart(data, sensors, metrics) {
                         color: 'rgba(229, 231, 235, 0.6)',
                         lineWidth: 1
                     }
-                }
+                },
+                yTemp: {
+                    type: 'linear',
+                    display: datasets.some(d => d.yAxisID === 'yTemp'),
+                    position: 'right',
+                    title: { display: true, text: 'Температура, °C' },
+                    min: 30,
+                    max: 42,
+                    beginAtZero: false,
+                    ticks: {
+                        stepSize: 2,
+                        callback: (val) => val + '°'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
             },
             
             plugins: {
