@@ -41,7 +41,9 @@
     </form>
   </div>
 </div>
-<canvas id="flexChart" style="height: 500px; width: 100%;"></canvas>
+<div style="width: 1200px; height: 500px; margin: 0 auto; position: relative;">
+    <canvas id="flexChart" style="display: block; width: 100%; height: 100%;"></canvas>
+</div>
 {% endblock %}
 
 
@@ -104,6 +106,9 @@ function buildChart(data, sensors, metrics) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                    padding: { top: 10, right: 10, bottom: 10, left: 10 }
+                },
             interaction: { mode: 'nearest', axis: 'x', intersect: false },
             scales: {
                 x: {
