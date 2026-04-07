@@ -344,6 +344,19 @@ window.onload = () => {
     fetchData();
 };
 
+document.addEventListener('DOMContentLoaded', function() {
+    const timeInputs = document.querySelectorAll('input[type="time"]');
+    timeInputs.forEach(input => {
+        // Устанавливаем атрибут lang для 24-часового формата
+        input.setAttribute('lang', 'en-GB');
+        
+        // Дополнительно: при фокусе показываем подсказку
+        input.addEventListener('focus', function() {
+            this.title = 'Формат: ЧЧ:ММ (24 часа)';
+        });
+    });
+});
+
 function formatDateISO(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
