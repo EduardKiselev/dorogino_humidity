@@ -330,7 +330,6 @@ def api_flex_chart_data():
         return jsonify({'error': 'date_from и date_to обязательны'}), 400
     
     try:
-        # datetime-local отдаёт 'YYYY-MM-DDTHH:MM' без таймзоны
         start = datetime.fromisoformat(date_from).replace(tzinfo=target_tz)
         end = datetime.fromisoformat(date_to).replace(tzinfo=target_tz)
     except ValueError as e:
@@ -346,19 +345,40 @@ def api_flex_chart_data():
     
     readings = query.order_by(SensorReading.timestamp).all()
     app.logger.info(f"Found {len(readings)} readings for flex chart")
-    if readings:
-        print(f"📊 Первая запись: sensor={readings[0].sensor_id}, temp={readings[0].temperature}, time={readings[0].timestamp}")
-        print(f"📊 Последняя запись: sensor={readings[-1].sensor_id}, time={readings[-1].timestamp}")
     
-    data = []
+    # === Нормализация: отбрасываем секунды и агрегируем по минуте ===
+    from collections import defaultdict
+    
+    # Группируем: (sensor_id, timestamp_без_секунд) → список значений
+    aggregated = defaultdict(lambda: {'temperatures': [], 'humidities': []})
+    
     for r in readings:
-        point = {'timestamp': r.timestamp.isoformat(), 'sensor_id': r.sensor_id}
-        if 'temperature' in metrics:
-            point['temperature'] = r.temperature
-        if 'humidity' in metrics:
-            point['humidity'] = r.humidity
+        # 👇 Обрезаем секунды: 2026-04-07T12:34:56 → 2026-04-07T12:34:00
+        ts_normalized = r.timestamp.replace(second=0, microsecond=0)
+        key = (r.sensor_id, ts_normalized)
+        
+        if r.temperature is not None:
+            aggregated[key]['temperatures'].append(r.temperature)
+        if r.humidity is not None:
+            aggregated[key]['humidities'].append(r.humidity)
+    
+    # Формируем ответ: усредняем значения внутри минуты
+    data = []
+    for (sensor_id, ts), values in aggregated.items():
+        point = {
+            'timestamp': ts.isoformat(),  # 👈 Теперь без секунд
+            'sensor_id': sensor_id
+        }
+        if 'temperature' in metrics and values['temperatures']:
+            point['temperature'] = round(sum(values['temperatures']) / len(values['temperatures']), 1)
+        if 'humidity' in metrics and values['humidities']:
+            point['humidity'] = round(sum(values['humidities']) / len(values['humidities']), 1)
         data.append(point)
     
+    # Сортируем по времени для корректного отображения
+    data.sort(key=lambda x: (x['timestamp'], x['sensor_id']))
+    
+    app.logger.info(f"Returned {len(data)} aggregated points")
     return jsonify(data)
 
 @app.route('/monitoring')

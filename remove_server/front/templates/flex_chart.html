@@ -172,22 +172,6 @@ function buildChart(data, sensors, metrics) {
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    filter: function(tooltipItem, index, allItems) {
-                        // Если точка одна или allItems не определён — показываем
-                        if (!allItems || allItems.length <= 1) return true;
-                        
-                        // Опорная точка — ближайшая к курсору (первая в списке)
-                        const referenceX = allItems[0].parsed?.x;
-                        if (referenceX === undefined) return true;
-                        
-                        const currentX = tooltipItem.parsed?.x;
-                        if (currentX === undefined) return false;
-                        
-                        const windowMs = 180000; // 👈 90 секунд = 1.5 минуты
-                        return Math.abs(currentX - referenceX) <= windowMs;
-                    },
                     callbacks: {
                         title: (items) => items.length ? fmtDate(items[0].parsed.x) : '',
                         label: (ctx) => {
