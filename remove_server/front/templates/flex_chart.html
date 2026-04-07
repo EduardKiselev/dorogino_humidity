@@ -116,7 +116,7 @@ function buildChart(data, sensors, metrics) {
                 tension: 0.2,
                 pointRadius: 2,
                 // ──── Стиль линии ────
-                borderDash: metric === 'temperature' ? [6, 4] : [], 
+                borderDash: metric === 'temperature' ? [6, 10] : [],  // [длина_штриха, пробел]
                 yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
             });
             colorIdx++;
@@ -191,8 +191,8 @@ function buildChart(data, sensors, metrics) {
                     position: 'left',
                     title: { display: true, text: 'Температура, °C' },
                     grid: { drawOnChartArea: false },
-                    suggestedMin: 30,
-                    suggestedMax: 42,
+                    min: 30,
+                    max: 42,
                     beginAtZero: false
                 },
                 yHum: {
