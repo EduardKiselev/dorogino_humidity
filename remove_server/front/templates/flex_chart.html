@@ -173,93 +173,43 @@ function buildChart(data, sensors, metrics) {
             
             scales: {
                 x: {
-                    type: 'linear',
-                    min: minX - padding,
-                    max: maxX + padding,
-                    ticks: {
-                        // 👇 Генерируем тики каждые 2 часа
-                        callback: function(val, index, ticks) {
-                            const date = new Date(val);
-                            const hours = date.toLocaleString('en-US', { 
-                                timeZone: 'Asia/Novosibirsk',
-                                hour: 'numeric',
-                                hour12: false
-                            });
-                            const minutes = date.getMinutes();
-                            
-                            // Показываем только чётные часы с ~нулевыми минутами
-                            if (parseInt(hours) % 2 === 0 && minutes < 10) {
-                                return date.toLocaleString('ru-RU', {
-                                    timeZone: 'Asia/Novosibirsk',
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                });
+                    type: 'time',
+                        time: {
+                            unit: 'hour',
+                            stepSize: 2,  // 👈 Жёсткий шаг 2 часа!
+                            tooltipFormat: 'dd.MM, HH:mm',
+                            displayFormats: {
+                                hour: 'dd.MM, HH:mm'
                             }
-                            return '';
                         },
-                        maxTicksLimit: 50,
-                        maxRotation: 45,
-                        minRotation: 45
-                    },
-                    // 👇 Явно задаём шаг 2 часа (7200000 мс)
-                    afterTickToLabelConversion: function(axis) {
-                        // Это хак, чтобы заставить Chart.js использовать наш шаг
-                        const TWO_HOURS = 2 * 60 * 60 * 1000;
-                        const start = axis.min;
-                        const end = axis.max;
-                        
-                        // Округляем начало до ближайшего чётного часа
-                        const startDate = new Date(start);
-                        const hours = startDate.getHours();
-                        startDate.setHours(hours - (hours % 2), 0, 0, 0);
-                        
-                        const ticks = [];
-                        let current = startDate.getTime();
-                        
-                        while (current <= end) {
-                            ticks.push({ value: current, label: '' });
-                            current += TWO_HOURS;
-                        }
-                        
-                        axis.ticks = ticks;
-                    },
-                    title: { display: true, text: 'Время' },
-                    grid: {
-                        color: (context) => {
-                            const tickVal = context.tick?.value;
-                            if (!tickVal) return 'rgba(0,0,0,0.05)';
-                            
-                            const date = new Date(tickVal);
-                            const hours = date.toLocaleString('en-US', { 
-                                timeZone: 'Asia/Novosibirsk',
-                                hour: 'numeric',
-                                hour12: false
-                            });
-                            
-                            return (parseInt(hours) % 2 === 0) 
-                                ? 'rgba(0,0,0,0.15)' 
-                                : 'rgba(0,0,0,0)';
-                        }
-                    }
-                    }
-                },
-                yTemp: {
-                    type: 'linear',
-                    display: datasets.some(d => d.yAxisID === 'yTemp'),
-                    position: 'right',
-                    title: { display: true, text: 'Температура, °C' },
-                    min: 30,
-                    max: 42,
-                    beginAtZero: false,
-                    ticks: {
-                        stepSize: 2,
-                        callback: (val) => val + '°'
-                    },
-                    grid: {
-                        drawOnChartArea: false
-                    }
+                        ticks: {
+                            callback: function(val) {
+                                const date = new Date(val);
+                                const hours = date.toLocaleString('en-US', { 
+                                    timeZone: 'Asia/Novosibirsk',
+                                    hour: 'numeric',
+                                    hour12: false
+                                });
+                                
+                                if (parseInt(hours) % 2 === 0) {
+                                    return date.toLocaleString('ru-RU', {
+                                        timeZone: 'Asia/Novosibirsk',
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                }
+                                return '';
+                            },
+                            source: 'ticks',  // 👈 Используем авто-генерацию тиков
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        title: { display: true, text: 'Время' },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }                    
                 },
                 yHum: {
                     type: 'linear',
