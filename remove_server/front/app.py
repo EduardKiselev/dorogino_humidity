@@ -345,8 +345,10 @@ def api_flex_chart_data():
         query = query.filter(SensorReading.sensor_id.in_(sensors))
     
     readings = query.order_by(SensorReading.timestamp).all()
-    print(readings)
     app.logger.info(f"Found {len(readings)} readings for flex chart")
+    if readings:
+        print(f"📊 Первая запись: sensor={readings[0].sensor_id}, temp={readings[0].temperature}, time={readings[0].timestamp}")
+        print(f"📊 Последняя запись: sensor={readings[-1].sensor_id}, time={readings[-1].timestamp}")
     
     data = []
     for r in readings:
@@ -381,7 +383,6 @@ def monitoring():
         is_admin=session.get('is_admin')
     )
 
-# Add these new routes to your app.py file
 
 @app.route('/workshop-diagram')
 def workshop_diagram():

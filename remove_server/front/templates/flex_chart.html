@@ -73,48 +73,50 @@ function buildChart(data, sensors, metrics) {
     const datasets = [];
     let colorIdx = 0;
     
-    sensors.forEach(sid => {
-        const sensorData = data.filter(d => d.sensor_id == sid);
-        console.log(`🔍 Сенсор ${sid}: ${sensorData.length} точек`);
+        sensors.forEach(sid => {
+            const sensorData = data.filter(d => d.sensor_id == sid);
+            console.log(`🔍 Сенсор ${sid}: ${sensorData.length} точек`);
+            
+            metrics.forEach(metric => {
+        const points = sensorData
+            .filter(d => {
+                const val = d[metric];
+                return val !== null && val !== undefined && !isNaN(+val);
+            })
+            .map((d, idx) => {
+                const dateObj = new Date(d.timestamp);
+                const ts = dateObj.getTime();
+                
+                if (isNaN(ts)) {
+                    console.warn(`❌ Invalid timestamp: "${d.timestamp}"`);
+                    return null;
+                }
+                
+                const point = { x: ts, y: +d[metric] };
+                
+                if (idx === 0 || idx === sensorData.length - 1) {
+                    console.log(`📍 [${metric}] #${idx}: x=${ts} (${fmtDate(ts)}), y=${point.y}`);
+                }
+                return point;
+            })
+            .filter(p => p !== null);  // Убираем точки с битыми датами
         
-        metrics.forEach(metric => {
-            const points = sensorData
-                .filter(d => {
-                    const val = d[metric];
-                    const isValid = val !== null && val !== undefined && !isNaN(+val);
-                    if (!isValid) {
-                        console.warn(`❌ Отброшено: sensor=${sid}, metric=${metric}, value=${val}`);
-                    }
-                    return isValid;
-                })
-                .map(d => {
-                    const ts = new Date(d.timestamp).getTime();
-                    const point = {
-                        x: ts,
-                        y: +d[metric]
-                    };
-                    // Логируем первую и последнюю точку
-                    if (points.length === 0 || points.length === sensorData.length - 1) {
-                        console.log(`📍 Точка: x=${ts} (${fmtDate(ts)}), y=${point.y}`);
-                    }
-                    return point;
-                });
-            
-            console.log(`✅ ${metric}: ${points.length} валидных точек`);
-            
-            if (points.length) {
-                const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
-                datasets.push({
-                    label,
-                     points,
-                    borderColor: colors[colorIdx % colors.length],
-                    tension: 0.2,
-                    pointRadius: 2,  // 👈 Показываем точки!
-                    yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
-                });
-                colorIdx++;
-            }
-        });
+        console.log(`✅ ${metric}: ${points.length} валидных точек`);
+        
+        if (points.length) {
+            console.log(`   📅 Диапазон: ${fmtDate(points[0].x)} — ${fmtDate(points[points.length-1].x)}`);
+            const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
+            datasets.push({
+                label,
+                points,
+                borderColor: colors[colorIdx % colors.length],
+                tension: 0.2,
+                pointRadius: 2,
+                yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
+            });
+            colorIdx++;
+        }
+    });
     });
     
     console.log('📈 Dataset' + (datasets.length > 0 ? 's' : '') + ':', datasets.length);
