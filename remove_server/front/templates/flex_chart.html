@@ -99,7 +99,7 @@ function buildChart(data, sensors, metrics) {
                 }
                 return point;
             })
-            .filter(p => p !== null);  // Убираем точки с битыми датами
+            .filter(p => p !== null); 
         
         console.log(`✅ ${metric}: ${points.length} валидных точек`);
         
@@ -136,7 +136,7 @@ function buildChart(data, sensors, metrics) {
     
     chart = new Chart(ctx, {
         type: 'line',
-         { datasets },
+        data: { datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
