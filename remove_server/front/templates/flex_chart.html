@@ -158,13 +158,6 @@ function buildChart(data, sensors, metrics) {
     console.log(`⏱️ Диапазон X: ${fmtDate(minX)} - ${fmtDate(maxX)}`);
 
     const padding = (maxX - minX) * 0.02 || 3600000;
-
-
-    const minX = Math.min(...allX);
-    const maxX = Math.max(...allX);
-    console.log(`⏱️ Диапазон X: ${fmtDate(minX)} - ${fmtDate(maxX)}`);
-    
-    const padding = (maxX - minX) * 0.02 || 3600000;
     
     chart = new Chart(ctx, {
         type: 'line',
