@@ -176,20 +176,55 @@ function buildChart(data, sensors, metrics) {
                     type: 'linear',
                     min: minX - padding,
                     max: maxX + padding,
-                    ticks: { 
-                        stepSize: TWO_HOURS_MS, // Жесткий шаг 2 часа
-                        callback: (val) => {
-                            const d = new Date(val);
-                            // Формат: 06.04, 02:00
-                            const dd = String(d.getDate()).padStart(2, '0');
-                            const mm = String(d.getMonth() + 1).padStart(2, '0');
-                            const hh = String(d.getHours()).padStart(2, '0');
-                            return `${dd}.${mm}, ${hh}:00`;
+                    time: {
+                        // 👇 Используем time scale вместо linear для лучшего контроля
+                        unit: 'hour',
+                        stepSize: 2,  // 👈 Жёсткий шаг 2 часа
+                        tooltipFormat: 'dd.MM, HH:mm',
+                        displayFormats: {
+                            hour: 'dd.MM, HH:mm'
                         }
+                    },
+                    ticks: {
+                                callback: function(val) {
+                                    const date = new Date(val);
+                                    const hours = date.toLocaleString('en-US', { 
+                                        timeZone: 'Asia/Novosibirsk',
+                                        hour: 'numeric',
+                                        hour12: false
+                                    });
+                                    
+                                    if (parseInt(hours) % 2 === 0) {
+                                        return date.toLocaleString('ru-RU', {
+                                            timeZone: 'Asia/Novosibirsk',
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    }
+                                    return '';
+                                },
+                                maxRotation: 45,
+                                minRotation: 45
                     },
                     title: { display: true, text: 'Время' },
                     grid: {
-                        color: 'rgba(0,0,0,0.1)' // Теперь сетка совпадает с тиками
+                        color: (context) => {
+                            const tickVal = context.tick?.value;
+                            if (!tickVal) return 'rgba(0,0,0,0.05)';
+                            
+                            const date = new Date(tickVal);
+                            const hours = date.toLocaleString('en-US', { 
+                                timeZone: 'Asia/Novosibirsk',
+                                hour: 'numeric',
+                                hour12: false
+                            });
+                            
+                            return (parseInt(hours) % 2 === 0) 
+                                ? 'rgba(0,0,0,0.15)' 
+                                : 'rgba(0,0,0,0)';
+                        }
                     }
                 },
                 yTemp: {
