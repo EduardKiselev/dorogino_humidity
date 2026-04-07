@@ -353,7 +353,7 @@ def api_flex_chart_data():
     
     for r in readings:
         ts_local = r.timestamp.astimezone(target_tz)
-        ts_normalized = ts_local.timestamp.replace(second=0, microsecond=0) # Обрезаем секунды: 2026-04-07T12:34:56 → 2026-04-07T12:34:00
+        ts_normalized = ts_local.replace(second=0, microsecond=0) # Обрезаем секунды: 2026-04-07T12:34:56 → 2026-04-07T12:34:00
         key = (r.sensor_id, ts_normalized)
         
         if r.temperature is not None:
