@@ -113,7 +113,8 @@ function buildChart(data, sensors, metrics) {
                     data: points,
                     borderColor: sensorColor,
                     tension: 0.2,
-                    pointRadius: 2,
+                    pointRadius: metric === 'temperature' ? 0 : 2,
+                    pointHoverRadius: metric === 'temperature' ? 4 : 4,
                     borderDash: metric === 'temperature' ? [6, 4] : [],
                     yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
                 });
@@ -215,8 +216,6 @@ function buildChart(data, sensors, metrics) {
                         if (title && !isNaN(titleNum) && titleNum > 1000000000) {  // > 1e9 = точно не год
                             title = fmtDate(titleNum);
                         }
-
-                        console.log('🔍 tooltip.title:', tooltip.title); 
 
                         const bodyItems = tooltip.body || []
                         if (bodyItems.length === 0) {
