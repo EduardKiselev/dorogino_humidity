@@ -229,7 +229,7 @@ function buildChart(data, sensors, metrics) {
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
-                    enabled: false,  // 👈 Отключаем встроенный тултип
+                    enabled: false,  // Отключаем встроенный тултип
                     external: function(context) {
                         const tooltip = context.tooltip;
                         const chart = context.chart;
@@ -398,7 +398,7 @@ document.getElementById('btnExport').onclick = async () => {
         const blob = new Blob([csv], {type: 'text/plain'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `export_${Date.now()}.txt`;
+        a.download = `export_${Date.now()}.csv`;
         a.click();
     } catch (err) {
         console.error('Export error:', err);
