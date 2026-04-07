@@ -235,40 +235,38 @@ function buildChart(data, sensors, metrics) {
                 tooltip: {
                     enabled: false,  // Отключаем встроенный тултип
                     external: function(context) {
-                        const tooltip = context.tooltip;
+                                            const tooltip = context.tooltip;
                         const chart = context.chart;
                         const el = document.getElementById('fixedTooltip');
                         if (!el) return;
                         
-                        // Скрываем, если тултип неактивен
                         if (tooltip.opacity === 0) {
                             el.style.display = 'none';
                             return;
                         }
                         
-                        // Формируем контент
-                        let title = tooltip.title?.[0] || '';
-                        
-                        const titleNum = Number(String(title).replace(/[ ,]/g, ''));
-                        if (title && !isNaN(titleNum) && titleNum > 1000000000) {  // > 1e9 = точно не год
-                            title = fmtDate(titleNum);
+                        let title = '';
+                        if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
+                            const firstPoint = tooltip.dataPoints[0];
+                            const rawX = firstPoint.parsed?.x || firstPoint.element?.x;
+                            if (rawX) {
+                                title = fmtDate(rawX); 
+                            }
                         }
-
-                        const bodyItems = tooltip.body || []
+                        
+                        const bodyItems = tooltip.body || [];
                         if (bodyItems.length === 0) {
                             el.style.display = 'none';
                             return;
                         }
                         
-                        // Собираем HTML
                         let html = `<div style="font-weight:600;margin-bottom:6px;color:#000">${title}</div>`;
+                        
                         bodyItems.forEach(bodyItem => {
                             const datasetIndex = bodyItem.datasetIndex;
-                            // 👈 Правильный доступ к датасету через chart
                             const dataset = chart.data.datasets[datasetIndex];
                             const color = dataset?.borderColor || '#666';
                             
-                            // bodyItem.lines — массив строк для этого датасета
                             (bodyItem.lines || []).forEach(line => {
                                 html += `<div style="display:flex;align-items:center;margin:2px 0">
                                     <span style="color:${color};margin-right:6px">●</span>
