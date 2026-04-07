@@ -195,7 +195,7 @@ function buildChart(data, sensors, metrics) {
                 yTemp: {
                     type: 'linear',
                     display: datasets.some(d => d.yAxisID === 'yTemp'),
-                    position: 'left',
+                    position: 'right',
                     title: { display: true, text: 'Температура, °C' },
                     min: 30,
                     max: 42,
@@ -206,20 +206,24 @@ function buildChart(data, sensors, metrics) {
                         callback: (val) => val + '°'
                     },
                     grid: {
-                        drawOnChartArea: true,
-                        color: 'rgba(229, 231, 235, 0.6)',  // светло-серый
-                        lineWidth: 1
+                        drawOnChartArea: false
                     }
                 },
                 yHum: {
                     type: 'linear',
                     display: datasets.some(d => d.yAxisID === 'yHum'),
-                    position: 'right',
+                    position: 'left',
                     title: { display: true, text: 'Влажность, %' },
                     min: 20,
                     max: 60,
+                    ticks: {
+                        stepSize: 5,
+                        callback: (val) => val + '°'
+                    },
                     grid: {
-                        drawOnChartArea: false  // 👈 Отключаем сетку для влажности, чтобы не дублировать
+                        drawOnChartArea: true,
+                        color: 'rgba(229, 231, 235, 0.6)',  // светло-серый
+                        lineWidth: 1
                     }
                 }
             },
