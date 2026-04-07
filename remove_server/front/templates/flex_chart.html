@@ -105,13 +105,18 @@ function buildChart(data, sensors, metrics) {
         
         if (points.length) {
             console.log(`   📅 Диапазон: ${fmtDate(points[0].x)} — ${fmtDate(points[points.length-1].x)}`);
-            const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
+            const metricName = metric === 'temperature' ? 'Температура' : 'Влажность';
+            const label = `Д${sid} — ${metricName}`;
+            const sensorColor = colors[(sid - 1) % colors.length];
+
             datasets.push({
                 label: label,
                 data: points,
-                borderColor: colors[colorIdx % colors.length],
+                borderColor: sensorColor,
                 tension: 0.2,
                 pointRadius: 2,
+                // ──── Стиль линии ────
+                borderDash: metric === 'temperature' ? [6, 4] : [], 
                 yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
             });
             colorIdx++;
