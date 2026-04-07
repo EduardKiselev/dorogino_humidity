@@ -229,10 +229,6 @@ def charts():
     month_ago = now - timedelta(days=30)
     year_ago = now - timedelta(days=365)
 
-    
-
-
-    
     # Запросы для каждого периода
     day_readings = SensorReading.query.filter(
         SensorReading.timestamp >= day_ago
@@ -314,6 +310,49 @@ def charts():
         sensor_ids=sensor_ids,
         is_admin=session.get('is_admin')
     )
+
+@app.route('/flex-chart')
+def flex_chart():
+    """Гибкий график с фильтрами"""
+    sensor_ids = sorted([s.sensor_id for s in SensorLocation.query.with_entities(SensorLocation.sensor_id).distinct()])
+    return render_template('flex_chart.html', sensor_ids=sensor_ids, is_admin=session.get('is_admin'))
+
+@app.route('/api/flex-chart-data')
+def api_flex_chart_data():
+    """API для данных гибкого графика"""
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    sensors = request.args.getlist('sensors', type=int)
+    metrics = request.args.getlist('metrics')  # ['temperature', 'humidity']
+    
+    if not date_from or not date_to:
+        return jsonify({'error': 'date_from и date_to обязательны'}), 400
+    
+    try:
+        start = datetime.fromisoformat(date_from).astimezone(target_tz)
+        end = datetime.fromisoformat(date_to).astimezone(target_tz)
+    except ValueError:
+        return jsonify({'error': 'Неверный формат даты'}), 400
+    
+    query = SensorReading.query.filter(
+        SensorReading.timestamp >= start,
+        SensorReading.timestamp <= end
+    )
+    if sensors:
+        query = query.filter(SensorReading.sensor_id.in_(sensors))
+    
+    readings = query.order_by(SensorReading.timestamp).all()
+    
+    data = []
+    for r in readings:
+        point = {'timestamp': r.timestamp.isoformat(), 'sensor_id': r.sensor_id}
+        if 'temperature' in metrics:
+            point['temperature'] = r.temperature
+        if 'humidity' in metrics:
+            point['humidity'] = r.humidity
+        data.append(point)
+    
+    return jsonify(data)
 
 @app.route('/monitoring')
 def monitoring():

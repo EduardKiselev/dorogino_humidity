@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Гибкий график{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form id="chartForm" class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">С даты</label>
+        <input type="datetime-local" class="form-control" name="date_from" id="dateFrom" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">По дату</label>
+        <input type="datetime-local" class="form-control" name="date_to" id="dateTo" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Сенсоры</label>
+        <div class="border rounded p-2" style="max-height:100px;overflow-y:auto">
+          {% for sid in sensor_ids %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="sensors" value="{{ sid }}" id="sen{{ sid }}" checked>
+            <label class="form-check-label" for="sen{{ sid }}">Датчик {{ sid }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Метрики</label>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="metrics" value="temperature" id="metTemp" checked>
+          <label class="form-check-label" for="metTemp">Температура</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="metrics" value="humidity" id="metHum" checked>
+          <label class="form-check-label" for="metHum">Влажность</label>
+        </div>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Построить</button>
+        <button type="button" class="btn btn-outline-secondary" id="btnExport">Экспорт CSV</button>
+      </div>
+    </form>
+  </div>
+</div>
+<canvas id="flexChart" height="100"></canvas>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('flexChart');
+let chart = null;
+const colors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00'];
+
+function buildChart(data, sensors, metrics) {
+  if (chart) chart.destroy();
+  const datasets = [];
+  let colorIdx = 0;
+  
+  sensors.forEach(sid => {
+    const sensorData = data.filter(d => d.sensor_id == sid);
+    metrics.forEach(metric => {
+      const points = sensorData.filter(d => d[metric] !== null).map(d => ({
+        x: new Date(d.timestamp),
+        y: d[metric]
+      }));
+      if (points.length) {
+        const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
+        datasets.push({
+          label,
+          data: points,
+          borderColor: colors[colorIdx % colors.length],
+          backgroundColor: colors[colorIdx % colors.length] + '20',
+          tension: 0.3,
+          pointRadius: 1,
+          yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
+        });
+        colorIdx++;
+      }
+    });
+  });
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { type: 'time', time: { unit: 'hour' }, title: { display: true, text: 'Время' } },
+        yTemp: { 
+          type: 'linear', display: datasets.some(d => d.yAxisID === 'yTemp'), 
+          position: 'left', title: { display: true, text: 'Температура, °C' }, grid: { drawOnChartArea: false }
+        },
+        yHum: { 
+          type: 'linear', display: datasets.some(d => d.yAxisID === 'yHum'), 
+          position: 'right', title: { display: true, text: 'Влажность, %' }, min: 0, max: 100
+        }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+async function fetchData() {
+  const form = document.getElementById('chartForm');
+  const params = new URLSearchParams(new FormData(form));
+  const res = await fetch(`/api/flex-chart-data?${params}`);
+  if (!res.ok) { alert('Ошибка загрузки данных'); return; }
+  const data = await res.json();
+  const sensors = [...form.querySelectorAll('[name="sensors"]:checked')].map(el => +el.value);
+  const metrics = [...form.querySelectorAll('[name="metrics"]:checked')].map(el => el.value);
+  buildChart(data, sensors, metrics);
+}
+
+document.getElementById('chartForm').onsubmit = (e) => { e.preventDefault(); fetchData(); };
+document.getElementById('btnExport').onclick = async () => {
+  const form = document.getElementById('chartForm');
+  const params = new URLSearchParams(new FormData(form));
+  const res = await fetch(`/api/flex-chart-data?${params}`);
+  const data = await res.json();
+  if (!data.length) return alert('Нет данных для экспорта');
+  
+  const headers = ['timestamp', 'sensor_id', 'temperature', 'humidity'];
+  const csv = [headers.join(';'), ...data.map(d => 
+    [d.timestamp, d.sensor_id, d.temperature ?? '', d.humidity ?? ''].join(';')
+  )].join('\n');
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `export_${Date.now()}.txt`;
+  a.click();
+};
+
+// Инициализация: последние 24 часа по умолчанию
+window.onload = () => {
+  const now = new Date(), yesterday = new Date(now - 24*60*60*1000);
+  document.getElementById('dateTo').value = now.toISOString().slice(0,16);
+  document.getElementById('dateFrom').value = yesterday.toISOString().slice(0,16);
+  fetchData();
+};
+</script>
+{% endblock %}

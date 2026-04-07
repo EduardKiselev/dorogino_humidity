@@ -14,6 +14,7 @@
             <div class="navbar-nav ms-auto">
                 <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Последние данные</a>
                 <a class="nav-link {% if request.endpoint == 'charts' %}active{% endif %}" href="{{ url_for('charts') }}">Графики</a>
+                <a class="nav-link {% if request.endpoint == 'flex_chart' %}active{% endif %}" href="{{ url_for('flex_chart') }}">📈 Гибкий график</a>
                 <a class="nav-link {% if request.endpoint == 'monitoring' %}active{% endif %}" href="{{ url_for('monitoring') }}">Мониторинг</a>
                 <a class="nav-link {% if request.endpoint == 'kiln_stats' %}active{% endif %}" href="{{ url_for('kiln_stats') }}">📊 Статистика печи</a>
                 <a class="nav-link {% if request.endpoint == 'workshop_diagram' %}active{% endif %}" href="{{ url_for('workshop_diagram') }}">Схема цеха</a>
