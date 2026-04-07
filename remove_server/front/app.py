@@ -324,16 +324,18 @@ def api_flex_chart_data():
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
     sensors = request.args.getlist('sensors', type=int)
-    metrics = request.args.getlist('metrics')  # ['temperature', 'humidity']
+    metrics = request.args.getlist('metrics')
     
     if not date_from or not date_to:
         return jsonify({'error': 'date_from и date_to обязательны'}), 400
     
     try:
-        start = datetime.fromisoformat(date_from).astimezone(target_tz)
-        end = datetime.fromisoformat(date_to).astimezone(target_tz)
-    except ValueError:
-        return jsonify({'error': 'Неверный формат даты'}), 400
+        # datetime-local отдаёт 'YYYY-MM-DDTHH:MM' без таймзоны
+        start = datetime.fromisoformat(date_from).replace(tzinfo=target_tz)
+        end = datetime.fromisoformat(date_to).replace(tzinfo=target_tz)
+    except ValueError as e:
+        app.logger.error(f"Date parse error: {e}")
+        return jsonify({'error': f'Неверный формат даты: {e}'}), 400
     
     query = SensorReading.query.filter(
         SensorReading.timestamp >= start,
@@ -343,6 +345,7 @@ def api_flex_chart_data():
         query = query.filter(SensorReading.sensor_id.in_(sensors))
     
     readings = query.order_by(SensorReading.timestamp).all()
+    app.logger.info(f"Found {len(readings)} readings for flex chart")
     
     data = []
     for r in readings:
