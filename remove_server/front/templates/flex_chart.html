@@ -147,6 +147,8 @@ function buildChart(data, sensors, metrics) {
     const minX = Math.min(...allX);
     const maxX = Math.max(...allX);
     const padding = (maxX - minX) * 0.02 || 3600000;
+
+    
     
     chart = new Chart(ctx, {
         type: 'line',
@@ -245,7 +247,7 @@ function buildChart(data, sensors, metrics) {
                         // Формируем контент
                         let title = tooltip.title?.[0] || '';
                         
-                        const titleNum = Number(String(title).replace(/,/g, ''));
+                        const titleNum = Number(String(title).replace(/[ ,]/g, ''));
                         if (title && !isNaN(titleNum) && titleNum > 1000000000) {  // > 1e9 = точно не год
                             title = fmtDate(titleNum);
                         }
