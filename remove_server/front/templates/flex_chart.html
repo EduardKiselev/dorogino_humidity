@@ -215,6 +215,8 @@ function buildChart(data, sensors, metrics) {
                             title = fmtDate(titleNum);
                         }
 
+                        console.log('🔍 tooltip.title:', tooltip.title); 
+
                         const bodyItems = tooltip.body || []
                         if (bodyItems.length === 0) {
                             el.style.display = 'none';
