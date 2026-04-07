@@ -6,7 +6,7 @@
     <form id="chartForm" class="row g-3">
       <div class="col-md-3">
         <label class="form-label">С даты</label>
-        <input type="datetime-local" class="form-control" name="date_from" id="dateFrom" required>
+        <input type="datetime-local" class="form-control" name="date_from" id="dateFrom" required lang="en-GB" style="font-variant-numeric: tabular-nums;">
       </div>
       <div class="col-md-3">
         <label class="form-label">По дату</label>
@@ -172,6 +172,14 @@ function buildChart(data, sensors, metrics) {
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    // 👇 Фиксируем позицию
+                    position: 'absolute',
+                    xAlign: 'left',
+                    yAlign: 'top',
+                    // 👇 Смещение от краёв (опционально)
+                    padding: 10,
                     callbacks: {
                         title: (items) => items.length ? fmtDate(items[0].parsed.x) : '',
                         label: (ctx) => {
@@ -231,10 +239,23 @@ document.getElementById('btnExport').onclick = async () => {
 
 // Инициализация
 window.onload = () => {
-    const now = new Date(), yesterday = new Date(now - 24*60*60*1000);
-    document.getElementById('dateTo').value = now.toISOString().slice(0,16);
-    document.getElementById('dateFrom').value = yesterday.toISOString().slice(0,16);
+    const now = new Date();
+    const yesterday = new Date(now - 24*60*60*1000);
+    document.getElementById('dateTo').value = formatForInput(now);
+    document.getElementById('dateFrom').value = formatForInput(yesterday);
+
+
     fetchData();
 };
+
+function formatForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 </script>
 {% endblock %}
