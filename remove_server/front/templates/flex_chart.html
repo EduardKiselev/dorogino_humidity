@@ -218,14 +218,19 @@ function buildChart(data, sensors, metrics) {
                         
                         // Собираем HTML
                         let html = `<div style="font-weight:600;margin-bottom:6px;color:#000">${title}</div>`;
-                        lines.forEach((line, i) => {
-                            // Цвет линии берём из dataset
-                            const dataset = tooltip.data.datasets[tooltip.body[i]?.datasetIndex];
+                        bodyItems.forEach(bodyItem => {
+                            const datasetIndex = bodyItem.datasetIndex;
+                            // 👈 Правильный доступ к датасету через chart
+                            const dataset = chart.data.datasets[datasetIndex];
                             const color = dataset?.borderColor || '#666';
-                            html += `<div style="display:flex;justify-content:space-between;margin:2px 0">
-                                <span style="color:${color}">●</span>
-                                <span style="margin-left:6px;color:#000">${line}</span>
-                            </div>`;
+                            
+                            // bodyItem.lines — массив строк для этого датасета
+                            (bodyItem.lines || []).forEach(line => {
+                                html += `<div style="display:flex;align-items:center;margin:2px 0">
+                                    <span style="color:${color};margin-right:6px">●</span>
+                                    <span style="color:#000">${line}</span>
+                                </div>`;
+                            });
                         });
                         
                         el.innerHTML = html;
