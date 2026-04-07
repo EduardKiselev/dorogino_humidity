@@ -197,6 +197,7 @@ function buildChart(data, sensors, metrics) {
                     enabled: false,  // 👈 Отключаем встроенный тултип
                     external: function(context) {
                         const tooltip = context.tooltip;
+                        const chart = context.chart;
                         const el = document.getElementById('fixedTooltip');
                         if (!el) return;
                         
@@ -308,5 +309,56 @@ function formatTime24(date) {
     const min = String(date.getMinutes()).padStart(2, '0');
     return `${h}:${min}`;
 }
+
+// 👇 Обработчик отправки формы
+document.getElementById('chartForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    fetchData();
+});
+
+// 👇 Обработчик экспорта
+document.getElementById('btnExport').onclick = async () => {
+    const form = document.getElementById('chartForm');
+    
+    const dateFrom = document.getElementById('dateFromDate').value;
+    const timeFrom = document.getElementById('dateFromTime').value;
+    const dateTo = document.getElementById('dateToDate').value;
+    const timeTo = document.getElementById('dateToTime').value;
+    
+    if (!dateFrom || !timeFrom || !dateTo || !timeTo) {
+        return alert('Заполните все поля даты и времени');
+    }
+    
+    const params = new URLSearchParams();
+    params.set('date_from', `${dateFrom}T${timeFrom}`);
+    params.set('date_to', `${dateTo}T${timeTo}`);
+    
+    const sensors = [...form.querySelectorAll('[name="sensors"]:checked')].map(el => +el.value);
+    const metrics = [...form.querySelectorAll('[name="metrics"]:checked')].map(el => el.value);
+    sensors.forEach(s => params.append('sensors', s));
+    metrics.forEach(m => params.append('metrics', m));
+    
+    try {
+        const res = await fetch(`/api/flex-chart-data?${params}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        if (!data.length) return alert('Нет данных');
+        
+        const headers = ['timestamp', 'sensor_id', 'temperature', 'humidity'];
+        const csv = [headers.join(';'), ...data.map(d => 
+            [d.timestamp, d.sensor_id, d.temperature ?? '', d.humidity ?? ''].join(';')
+        )].join('\n');
+        
+        const blob = new Blob([csv], {type: 'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `export_${Date.now()}.txt`;
+        a.click();
+    } catch (err) {
+        console.error('Export error:', err);
+        alert(`Ошибка экспорта: ${err.message}`);
+    }
+};
 </script>
 {% endblock %}
