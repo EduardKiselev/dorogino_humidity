@@ -180,10 +180,8 @@ function buildChart(data, sensors, metrics) {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
-                    // 👇 Фиксируем позицию
-                    position: function(context, eventPosition) {
-                        return { x: 15, y: 15 };  // 15px от левого верхнего угла
-                    },
+                    xAlign: 'left',
+                    yAlign: 'top',
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     titleColor: '#000',
                     bodyColor: '#000',
@@ -242,18 +240,27 @@ async function fetchData() {
     }
 }
 
-// Инициализация: устанавливаем значения и формат 24ч
+// ✅ ЕДИНЫЙ window.onload — замени всё, что было, на это:
 window.onload = () => {
+    // Проверяем, что элементы существуют
+    const dateFromDate = document.getElementById('dateFromDate');
+    const dateFromTime = document.getElementById('dateFromTime');
+    const dateToDate = document.getElementById('dateToDate');
+    const dateToTime = document.getElementById('dateToTime');
+    
+    if (!dateFromDate || !dateFromTime || !dateToDate || !dateToTime) {
+        console.error('❌ Не найдены поля даты/времени');
+        return;
+    }
+    
     const now = new Date();
     const yesterday = new Date(now - 24*60*60*1000);
     
-    // date input: YYYY-MM-DD
-    document.getElementById('dateFromDate').value = formatDateISO(yesterday);
-    document.getElementById('dateToDate').value = formatDateISO(now);
-    
-    // time input: HH:MM (24-часовой формат)
-    document.getElementById('dateFromTime').value = formatTime24(yesterday);
-    document.getElementById('dateToTime').value = formatTime24(now);
+    // Устанавливаем значения
+    dateFromDate.value = formatDateISO(yesterday);
+    dateToDate.value = formatDateISO(now);
+    dateFromTime.value = formatTime24(yesterday);
+    dateToTime.value = formatTime24(now);
     
     fetchData();
 };
@@ -270,48 +277,5 @@ function formatTime24(date) {
     const min = String(date.getMinutes()).padStart(2, '0');
     return `${h}:${min}`;
 }
-
-
-document.getElementById('chartForm').onsubmit = (e) => { e.preventDefault(); fetchData(); };
-
-document.getElementById('btnExport').onclick = async () => {
-    const form = document.getElementById('chartForm');
-    const params = new URLSearchParams(new FormData(form));
-    const res = await fetch(`/api/flex-chart-data?${params}`);
-    const data = await res.json();
-    if (!data.length) return alert('Нет данных');
-    
-    const headers = ['timestamp', 'sensor_id', 'temperature', 'humidity'];
-    const csv = [headers.join(';'), ...data.map(d => 
-        [d.timestamp, d.sensor_id, d.temperature ?? '', d.humidity ?? ''].join(';')
-    )].join('\n');
-    
-    const blob = new Blob([csv], {type: 'text/plain'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `export_${Date.now()}.txt`;
-    a.click();
-};
-
-// Инициализация
-window.onload = () => {
-    const now = new Date();
-    const yesterday = new Date(now - 24*60*60*1000);
-    document.getElementById('dateTo').value = formatForInput(now);
-    document.getElementById('dateFrom').value = formatForInput(yesterday);
-
-
-    fetchData();
-};
-
-function formatForInput(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
 </script>
 {% endblock %}
