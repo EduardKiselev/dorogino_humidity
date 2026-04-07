@@ -211,7 +211,7 @@ function buildChart(data, sensors, metrics) {
                         const title = tooltip.title?.[0] || '';
                         const bodyItems = tooltip.body || []
                         
-                        if (lines.length === 0) {
+                        if (bodyItems.length === 0) {
                             el.style.display = 'none';
                             return;
                         }
