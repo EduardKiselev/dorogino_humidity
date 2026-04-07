@@ -315,6 +315,7 @@ def charts():
 def flex_chart():
     """Гибкий график с фильтрами"""
     sensor_ids = sorted([s.sensor_id for s in SensorLocation.query.with_entities(SensorLocation.sensor_id).distinct()])
+    print(sensor_ids)
     return render_template('flex_chart.html', sensor_ids=sensor_ids, is_admin=session.get('is_admin'))
 
 @app.route('/api/flex-chart-data')
