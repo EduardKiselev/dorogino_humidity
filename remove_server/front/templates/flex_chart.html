@@ -107,8 +107,8 @@ function buildChart(data, sensors, metrics) {
             console.log(`   📅 Диапазон: ${fmtDate(points[0].x)} — ${fmtDate(points[points.length-1].x)}`);
             const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
             datasets.push({
-                label,
-                points,
+                label: label,
+                data: points,
                 borderColor: colors[colorIdx % colors.length],
                 tension: 0.2,
                 pointRadius: 2,
@@ -127,7 +127,39 @@ function buildChart(data, sensors, metrics) {
     }
     
     // Найдем реальный диапазон X
-    const allX = datasets.flatMap(d => d.data.map(p => p.x));
+    // === Сбор всех X-координат для расчёта диапазона ===
+    console.log('🔍 Структура datasets:', datasets.map(ds => ({
+        label: ds.label,
+        hasData: 'data' in ds,
+        dataIsArray: Array.isArray(ds.data),
+        length: ds.data?.length
+    })));
+
+    const allX = [];
+    for (const ds of datasets) {
+        // Явно проверяем, что свойство "data" существует и это массив
+        if (ds.data && Array.isArray(ds.data)) {
+            for (const point of ds.data) {
+                if (point.x !== null && point.x !== undefined && !isNaN(point.x)) {
+                    allX.push(point.x);
+                }
+            }
+        }
+    }
+
+    if (allX.length === 0) {
+        console.error('❌ Не найдено валидных точек для оси X');
+        alert('Ошибка: нет данных для построения графика. Проверьте консоль.');
+        return;
+    }
+
+    const minX = Math.min(...allX);
+    const maxX = Math.max(...allX);
+    console.log(`⏱️ Диапазон X: ${fmtDate(minX)} - ${fmtDate(maxX)}`);
+
+    const padding = (maxX - minX) * 0.02 || 3600000;
+
+
     const minX = Math.min(...allX);
     const maxX = Math.max(...allX);
     console.log(`⏱️ Диапазон X: ${fmtDate(minX)} - ${fmtDate(maxX)}`);
