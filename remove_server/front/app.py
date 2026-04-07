@@ -345,6 +345,7 @@ def api_flex_chart_data():
         query = query.filter(SensorReading.sensor_id.in_(sensors))
     
     readings = query.order_by(SensorReading.timestamp).all()
+    print(readings)
     app.logger.info(f"Found {len(readings)} readings for flex chart")
     
     data = []
