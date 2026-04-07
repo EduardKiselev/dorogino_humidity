@@ -97,7 +97,7 @@ function buildChart(data, sensors, metrics) {
     
     chart = new Chart(ctx, {
         type: 'line',
-         { datasets },
+        data: { datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
