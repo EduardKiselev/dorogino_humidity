@@ -51,7 +51,7 @@
     <canvas id="flexChart" style="display: block; width: 100%; height: 100%;"></canvas>
     <div id="fixedTooltip" style="
     position: absolute;
-    left: 15px;
+    left: 70px;
     top: 15px;
     width: 220px;
     background: rgba(255, 255, 255, 0.98);
@@ -209,7 +209,7 @@ function buildChart(data, sensors, metrics) {
                         }
                         
                         // Формируем контент
-                        const title = tooltip.title?.[0] || '';
+                        let title = tooltip.title?.[0] || '';
                         if (title && !isNaN(title)) {
                            title = fmtDate(parseInt(title));
                         }
