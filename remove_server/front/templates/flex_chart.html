@@ -54,114 +54,74 @@ const ctx = document.getElementById('flexChart');
 let chart = null;
 const colors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf'];
 
-// Форматирование даты для тултипа
 function fmtDate(ts) {
     const d = new Date(ts);
     return d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
 }
 
 function buildChart(data, sensors, metrics) {
-    console.log('📊 Всего данных от API:', data.length);
-    if (data.length > 0) {
-        console.log('📅 Пример данных:', data[0]);
-        console.log('📅 Timestamp первого:', data[0].timestamp);
-        console.log('📅 Преобразованная дата:', new Date(data[0].timestamp));
-    }
-    
     if (chart) chart.destroy();
     
     const datasets = [];
-    let colorIdx = 0;
     
-        sensors.forEach(sid => {
-            const sensorData = data.filter(d => d.sensor_id == sid);
-            console.log(`🔍 Сенсор ${sid}: ${sensorData.length} точек`);
+    sensors.forEach(sid => {
+        const sensorData = data.filter(d => d.sensor_id == sid);
+        
+        metrics.forEach(metric => {
+            const points = sensorData
+                .filter(d => {
+                    const val = d[metric];
+                    return val !== null && val !== undefined && !isNaN(+val);
+                })
+                .map(d => {
+                    const ts = new Date(d.timestamp).getTime();
+                    if (isNaN(ts)) return null;
+                    return { x: ts, y: +d[metric] };
+                })
+                .filter(p => p !== null);
             
-            metrics.forEach(metric => {
-        const points = sensorData
-            .filter(d => {
-                const val = d[metric];
-                return val !== null && val !== undefined && !isNaN(+val);
-            })
-            .map((d, idx) => {
-                const dateObj = new Date(d.timestamp);
-                const ts = dateObj.getTime();
+            if (points.length) {
+                const metricName = metric === 'temperature' ? 'Температура' : 'Влажность';
+                const label = `Д${sid} — ${metricName}`;
+                const sensorColor = colors[(sid - 1) % colors.length];
                 
-                if (isNaN(ts)) {
-                    console.warn(`❌ Invalid timestamp: "${d.timestamp}"`);
-                    return null;
-                }
-                
-                const point = { x: ts, y: +d[metric] };
-                
-                if (idx === 0 || idx === sensorData.length - 1) {
-                    console.log(`📍 [${metric}] #${idx}: x=${ts} (${fmtDate(ts)}), y=${point.y}`);
-                }
-                return point;
-            })
-            .filter(p => p !== null); 
-        
-        console.log(`✅ ${metric}: ${points.length} валидных точек`);
-        
-        if (points.length) {
-            console.log(`   📅 Диапазон: ${fmtDate(points[0].x)} — ${fmtDate(points[points.length-1].x)}`);
-            const metricName = metric === 'temperature' ? 'Температура' : 'Влажность';
-            const label = `Д${sid} — ${metricName}`;
-            const sensorColor = colors[(sid - 1) % colors.length];
-
-            datasets.push({
-                label: label,
-                data: points,
-                borderColor: sensorColor,
-                tension: 0.2,
-                pointRadius: 2,
-                // ──── Стиль линии ────
-                borderDash: metric === 'temperature' ? [6, 10] : [],  // [длина_штриха, пробел]
-                yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
-            });
-            colorIdx++;
-        }
+                datasets.push({
+                    label: label,
+                    data: points,
+                    borderColor: sensorColor,
+                    tension: 0.2,
+                    pointRadius: 2,
+                    borderDash: metric === 'temperature' ? [6, 4] : [],
+                    yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
+                });
+            }
+        });
     });
-    });
-    
-    console.log('📈 Dataset' + (datasets.length > 0 ? 's' : '') + ':', datasets.length);
     
     if (datasets.length === 0) {
-        alert('Нет данных для отображения. Проверьте консоль (F12)');
+        alert('Нет данных для отображения');
         return;
     }
     
-    // Найдем реальный диапазон X
-    // === Сбор всех X-координат для расчёта диапазона ===
-    console.log('🔍 Структура datasets:', datasets.map(ds => ({
-        label: ds.label,
-        hasData: 'data' in ds,
-        dataIsArray: Array.isArray(ds.data),
-        length: ds.data?.length
-    })));
-
+    // Расчёт диапазона X
     const allX = [];
     for (const ds of datasets) {
-        // Явно проверяем, что свойство "data" существует и это массив
         if (ds.data && Array.isArray(ds.data)) {
             for (const point of ds.data) {
-                if (point.x !== null && point.x !== undefined && !isNaN(point.x)) {
+                if (point.x !== null && !isNaN(point.x)) {
                     allX.push(point.x);
                 }
             }
         }
     }
-
+    
     if (allX.length === 0) {
         console.error('❌ Не найдено валидных точек для оси X');
-        alert('Ошибка: нет данных для построения графика. Проверьте консоль.');
         return;
     }
-
+    
     const minX = Math.min(...allX);
     const maxX = Math.max(...allX);
-    console.log(`⏱️ Диапазон X: ${fmtDate(minX)} - ${fmtDate(maxX)}`);
-
     const padding = (maxX - minX) * 0.02 || 3600000;
     
     chart = new Chart(ctx, {
@@ -170,10 +130,15 @@ function buildChart(data, sensors, metrics) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            layout: {
-                padding: { top: 10, right: 10, bottom: 10, left: 10 }
+            layout: { padding: { top: 10, right: 10, bottom: 10, left: 10 } },
+            
+            // 👇 Показывать все датасеты при наведении на временную точку
+            interaction: { 
+                mode: 'index', 
+                intersect: false,
+                axis: 'x'
             },
-            interaction: { mode: 'nearest', axis: 'x', intersect: false },
+            
             scales: {
                 x: {
                     type: 'linear',
@@ -207,9 +172,16 @@ function buildChart(data, sensors, metrics) {
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
+                    // 👇 Показывать все метрики в тултипе
+                    mode: 'index',
+                    intersect: false,
                     callbacks: {
+                        // Формат заголовка: дата/время
+                        title: (items) => fmtDate(items[0].parsed.x),
+                        // Формат строки: "Д2 — Температура: 37.8"
                         label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}`,
-                        title: (items) => fmtDate(items[0].parsed.x)
+                        // Сортировка: сначала температура, потом влажность (опционально)
+                        itemSort: (a, b) => a.dataset.yAxisID.localeCompare(b.dataset.yAxisID)
                     }
                 }
             }
@@ -231,7 +203,7 @@ async function fetchData() {
         
         buildChart(data, sensors, metrics);
     } catch (err) {
-        console.error(err);
+        console.error('Fetch error:', err);
         alert(`Ошибка: ${err.message}`);
     }
 }
