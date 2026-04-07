@@ -69,9 +69,12 @@ function buildChart(data, sensors, metrics) {
         const sensorData = data.filter(d => d.sensor_id == sid);
         metrics.forEach(metric => {
             const points = sensorData
-                .filter(d => d[metric] !== null && d[metric] !== undefined)
+                .filter(d => {
+                    const val = d[metric];
+                    return val !== null && val !== undefined && !isNaN(+val);
+                })
                 .map(d => ({
-                    x: new Date(d.timestamp).getTime(), // числовой таймстамп
+                    x: new Date(d.timestamp).getTime(),
                     y: +d[metric]
                 }));
             
