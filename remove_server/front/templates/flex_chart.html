@@ -169,20 +169,50 @@ function buildChart(data, sensors, metrics) {
                     min: minX - padding,
                     max: maxX + padding,
                     ticks: { 
-                        callback: (val) => fmtDate(val),
-                        maxTicksLimit: 10
+                        callback: (val) => {
+                            const d = new Date(val);
+                            const h = d.getHours();
+                            // 👇 Показываем метки только для чётных часов
+                            return h % 2 === 0 ? fmtDate(val) : '';
+                        },
+                        maxTicksLimit: 20
                     },
-                    title: { display: true, text: 'Время' }
+                    title: { display: true, text: 'Время' },
+                    // 👇 Вертикальные линии сетки через каждые 2 часа
+                    grid: {
+                        color: (context) => {
+                            const tick = context.tick?.value;
+                            if (!tick) return 'rgba(0,0,0,0.1)';
+                            const h = new Date(tick).getHours();
+                            // 👇 Линии только для чётных часов, чуть жирнее
+                            return h % 2 === 0 ? 'rgba(0,0,0,0.15)' : 'transparent';
+                        },
+                        lineWidth: (context) => {
+                            const tick = context.tick?.value;
+                            if (!tick) return 1;
+                            const h = new Date(tick).getHours();
+                            return h % 2 === 0 ? 1 : 0;
+                        }
+                    }
                 },
                 yTemp: {
                     type: 'linear',
                     display: datasets.some(d => d.yAxisID === 'yTemp'),
                     position: 'left',
                     title: { display: true, text: 'Температура, °C' },
-                    grid: { drawOnChartArea: false },
                     min: 30,
                     max: 42,
-                    beginAtZero: false
+                    beginAtZero: false,
+                    // 👇 Горизонтальные линии с шагом 2
+                    ticks: {
+                        stepSize: 2,
+                        callback: (val) => val + '°'
+                    },
+                    grid: {
+                        drawOnChartArea: true,
+                        color: 'rgba(229, 231, 235, 0.6)',  // светло-серый
+                        lineWidth: 1
+                    }
                 },
                 yHum: {
                     type: 'linear',
@@ -190,7 +220,10 @@ function buildChart(data, sensors, metrics) {
                     position: 'right',
                     title: { display: true, text: 'Влажность, %' },
                     min: 20,
-                    max: 60
+                    max: 60,
+                    grid: {
+                        drawOnChartArea: false  // 👈 Отключаем сетку для влажности, чтобы не дублировать
+                    }
                 }
             },
             plugins: {
