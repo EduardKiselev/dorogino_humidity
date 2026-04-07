@@ -175,13 +175,16 @@ function buildChart(data, sensors, metrics) {
                     // 👇 Показывать все метрики в тултипе
                     mode: 'index',
                     intersect: false,
+                    filter: function(tooltipItem, allItems) {
+                        if (allItems.length === 0) return true;
+                        const referenceX = allItems[0].parsed.x;
+                        const windowMs = 90000; // 1.5 минуты
+                        return Math.abs(tooltipItem.parsed.x - referenceX) <= windowMs;
+                    },
                     callbacks: {
-                        // Формат заголовка: дата/время
-                        title: (items) => fmtDate(items[0].parsed.x),
-                        // Формат строки: "Д2 — Температура: 37.8"
+                        title: (items) => items.length ? fmtDate(items[0].parsed.x) : '',
                         label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}`,
-                        // Сортировка: сначала температура, потом влажность (опционально)
-                        itemSort: (a, b) => a.dataset.yAxisID.localeCompare(b.dataset.yAxisID)
+                        itemSort: (a, b) => (a.dataset.label || '').localeCompare(b.dataset.label || '')
                     }
                 }
             }
