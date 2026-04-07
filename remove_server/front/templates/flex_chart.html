@@ -61,7 +61,13 @@ function fmtDate(ts) {
 }
 
 function buildChart(data, sensors, metrics) {
-    console.log('Building chart:', {dataCount: data.length, sensors, metrics});
+    console.log('📊 Всего данных от API:', data.length);
+    if (data.length > 0) {
+        console.log('📅 Пример данных:', data[0]);
+        console.log('📅 Timestamp первого:', data[0].timestamp);
+        console.log('📅 Преобразованная дата:', new Date(data[0].timestamp));
+    }
+    
     if (chart) chart.destroy();
     
     const datasets = [];
@@ -69,16 +75,32 @@ function buildChart(data, sensors, metrics) {
     
     sensors.forEach(sid => {
         const sensorData = data.filter(d => d.sensor_id == sid);
+        console.log(`🔍 Сенсор ${sid}: ${sensorData.length} точек`);
+        
         metrics.forEach(metric => {
             const points = sensorData
                 .filter(d => {
                     const val = d[metric];
-                    return val !== null && val !== undefined && !isNaN(+val);
+                    const isValid = val !== null && val !== undefined && !isNaN(+val);
+                    if (!isValid) {
+                        console.warn(`❌ Отброшено: sensor=${sid}, metric=${metric}, value=${val}`);
+                    }
+                    return isValid;
                 })
-                .map(d => ({
-                    x: new Date(d.timestamp).getTime(),
-                    y: +d[metric]
-                }));
+                .map(d => {
+                    const ts = new Date(d.timestamp).getTime();
+                    const point = {
+                        x: ts,
+                        y: +d[metric]
+                    };
+                    // Логируем первую и последнюю точку
+                    if (points.length === 0 || points.length === sensorData.length - 1) {
+                        console.log(`📍 Точка: x=${ts} (${fmtDate(ts)}), y=${point.y}`);
+                    }
+                    return point;
+                });
+            
+            console.log(`✅ ${metric}: ${points.length} валидных точек`);
             
             if (points.length) {
                 const label = `Д${sid} ${metric === 'temperature' ? '🌡️' : '💧'}`;
@@ -87,7 +109,7 @@ function buildChart(data, sensors, metrics) {
                      points,
                     borderColor: colors[colorIdx % colors.length],
                     tension: 0.2,
-                    pointRadius: 0,
+                    pointRadius: 2,  // 👈 Показываем точки!
                     yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
                 });
                 colorIdx++;
@@ -95,25 +117,40 @@ function buildChart(data, sensors, metrics) {
         });
     });
     
+    console.log('📈 Dataset' + (datasets.length > 0 ? 's' : '') + ':', datasets.length);
+    
     if (datasets.length === 0) {
-        alert('Нет данных для отображения');
+        alert('Нет данных для отображения. Проверьте консоль (F12)');
         return;
     }
     
+    // Найдем реальный диапазон X
+    const allX = datasets.flatMap(d => d.data.map(p => p.x));
+    const minX = Math.min(...allX);
+    const maxX = Math.max(...allX);
+    console.log(`⏱️ Диапазон X: ${fmtDate(minX)} - ${fmtDate(maxX)}`);
+    
+    const padding = (maxX - minX) * 0.02 || 3600000;
+    
     chart = new Chart(ctx, {
         type: 'line',
-        data: { datasets },
+         { datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             layout: {
-                    padding: { top: 10, right: 10, bottom: 10, left: 10 }
-                },
+                padding: { top: 10, right: 10, bottom: 10, left: 10 }
+            },
             interaction: { mode: 'nearest', axis: 'x', intersect: false },
             scales: {
                 x: {
                     type: 'linear',
-                    ticks: { callback: (val) => fmtDate(val) },
+                    min: minX - padding,
+                    max: maxX + padding,
+                    ticks: { 
+                        callback: (val) => fmtDate(val),
+                        maxTicksLimit: 10
+                    },
                     title: { display: true, text: 'Время' }
                 },
                 yTemp: {
@@ -122,7 +159,6 @@ function buildChart(data, sensors, metrics) {
                     position: 'left',
                     title: { display: true, text: 'Температура, °C' },
                     grid: { drawOnChartArea: false },
-                    // 👇 Добавь эти параметры:
                     suggestedMin: 30,
                     suggestedMax: 42,
                     beginAtZero: false
