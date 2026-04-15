@@ -522,70 +522,59 @@ def api_sensor_readings_by_time():
 @app.route('/admin/sensor-locations', methods=['GET', 'POST'])
 @admin_required
 def manage_sensor_locations():
-    """Admin page to manage sensor locations on the diagram"""
+    # 1. Динамически получаем ID всех датчиков, которые есть в БД
+    sensor_ids = get_all_sensor_ids()
+    
     if request.method == 'POST':
         try:
-            for i in range(1, 6):  # For sensors 1-5
-                description = request.form.get(f'description_{i}')
-                x_coord = request.form.get(f'x_{i}')
-                y_coord = request.form.get(f'y_{i}')
-                # Fix: Check if checkbox is present in form data (meaning checked) or not
-                active_status = f'active_{i}' in request.form
+            for sid in sensor_ids:
+                desc = request.form.get(f'description_{sid}')
+                x_str = request.form.get(f'x_{sid}')
+                y_str = request.form.get(f'y_{sid}')
+                is_active = f'active_{sid}' in request.form
                 
-                if description and x_coord and y_coord:
+                if desc and x_str and y_str:
                     try:
-                        x = float(x_coord)
-                        y = float(y_coord)
-                        
-                        # Check if location already exists
-                        location = SensorLocation.query.filter_by(sensor_id=i).first()
-                        if location:
-                            # Update existing location
-                            location.description = description
-                            location.x_coordinate = x
-                            location.y_coordinate = y
-                            # Update active status based on presence in form data
-                            location.active = active_status
-                        else:
-                            # Create new location
-                            location = SensorLocation(
-                                sensor_id=i,
-                                description=description,
-                                x_coordinate=x,
-                                y_coordinate=y,
-                                active=active_status
-                            )
-                            db.session.add(location)
+                        x, y = float(x_str), float(y_str)
                     except ValueError:
-                        flash(f'Invalid coordinates for sensor {i}', 'danger')
+                        flash(f'Некорректные координаты для датчика {sid}', 'danger')
                         continue
-            
+                        
+                    location = SensorLocation.query.filter_by(sensor_id=sid).first()
+                    if location:
+                        location.description = desc
+                        location.x_coordinate = x
+                        location.y_coordinate = y
+                        location.active = is_active
+                    else:
+                        db.session.add(SensorLocation(
+                            sensor_id=sid, description=desc,
+                            x_coordinate=x, y_coordinate=y, active=is_active
+                        ))
+                        
             db.session.commit()
-            flash('Sensor locations updated successfully!', 'success')
+            flash('Координаты датчиков успешно сохранены!', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error updating sensor locations: {str(e)}', 'danger')
-    
-    # Load existing locations
+            flash(f'Ошибка сохранения: {str(e)}', 'danger')
+            
+    # 2. Подготавливаем данные для формы
+    existing_locs = {loc.sensor_id: loc for loc in SensorLocation.query.all()}
     sensor_locations = {}
-    for i in range(1, 6):
-        location = SensorLocation.query.filter_by(sensor_id=i).first()
-        if location:
-            sensor_locations[i] = {
-                'description': location.description,
-                'x': location.x_coordinate,
-                'y': location.y_coordinate,
-                'active': location.active
-            }
-        else:
-            sensor_locations[i] = {
-                'description': f'Sensor {i} location description',
-                'x': 0.0,
-                'y': 0.0,
-                'active': True
-            }
-    
-    return render_template('admin/sensor_locations.html', sensor_locations=sensor_locations)
+    for sid in sensor_ids:
+        loc = existing_locs.get(sid)
+        sensor_locations[sid] = {
+            'description': loc.description if loc else f'Датчик {sid}',
+            'x': loc.x_coordinate if loc else 0.0,
+            'y': loc.y_coordinate if loc else 0.0,
+            'active': loc.active if loc else True
+        }
+        
+    return render_template(
+        'admin/sensor_locations.html', 
+        sensor_locations=sensor_locations,
+        sensor_ids=sensor_ids
+    )
 
 @app.route('/settings', methods=['GET', 'POST'])
 @admin_required
