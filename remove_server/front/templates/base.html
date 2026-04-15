@@ -21,7 +21,7 @@
                 <a class="nav-link {% if request.endpoint == 'workshop_diagram' %}active{% endif %}" href="{{ url_for('workshop_diagram') }}">Схема цеха</a>
                 {% if is_admin %}
                     <a class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}">Настройки</a>
-                    <a class="nav-link {% if request.endpoint == 'sensor-locations' %}active{% endif %}" href="{{ url_for(''manage_sensor_locations'') }}">Данные по датчикам</a>
+                    <a class="nav-link {% if request.endpoint == 'sensor-locations' %}active{% endif %}" href="{{ url_for('manage_sensor_locations') }}">Данные по датчикам</a>
                     <a class="nav-link" href="{{ url_for('logout') }}">Выход</a>
 
                 {% else %}
