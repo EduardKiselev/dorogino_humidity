@@ -752,6 +752,11 @@ def control_humidifier_job():
             print(f"Error in control_humidifier_job: {e}")
             db.session.rollback()
 
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve static files from the static folder"""
+    return send_from_directory('static', filename)
+
 def init_scheduler():
     """Initialize the background scheduler"""
     global scheduler
@@ -769,14 +774,17 @@ def init_scheduler():
             scheduler.start()
             print("Scheduler started for humidifier control")
 
+def get_all_sensor_ids():
+    """Возвращает отсортированный список уникальных ID датчиков из БД"""
+    ids = [r[0] for r in db.session.query(SensorReading.sensor_id)
+           .distinct().order_by(SensorReading.sensor_id).all()]
+    return ids if ids else []
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
 
-        sensor_ids = [r[0] for r in db.session.query(SensorReading.sensor_id)
-                      .distinct().order_by(SensorReading.sensor_id).all()]
-        if not sensor_ids:
-            sensor_ids = []
+        sensor_ids = get_all_sensor_ids()
 
         for sensor_id in sensor_ids:
                     for day in range(7):
@@ -800,7 +808,8 @@ if __name__ == '__main__':
         
     app.run(host='0.0.0.0', port=5000, debug=True)
 
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    """Serve static files from the static folder"""
-    return send_from_directory('static', filename)
+
+
+
+
+
