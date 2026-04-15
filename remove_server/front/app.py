@@ -394,6 +394,22 @@ def api_flex_chart_data():
     app.logger.info(f"Returned {len(data)} aggregated points")
     return jsonify(data)
 
+@app.route('/sensor-mapping')
+def sensor_mapping():
+    """Только просмотр: какой датчик где установлен"""
+    # Все уникальные датчики из показаний
+    sensor_ids = [r[0] for r in db.session.query(SensorReading.sensor_id)
+                  .distinct().order_by(SensorReading.sensor_id).all()]
+    
+    # Описания из SensorLocation
+    locations = {loc.sensor_id: loc.description for loc in SensorLocation.query.all()}
+    
+    sensors = [
+        {'id': sid, 'desc': locations.get(sid, '⚠️ не задано')}
+        for sid in sensor_ids
+    ]
+    
+    return render_template('sensor_mapping.html', sensors=sensors, is_admin=session.get('is_admin'))
 @app.route('/monitoring')
 def monitoring():
     """Страница мониторинга состояния датчиков и серверов"""

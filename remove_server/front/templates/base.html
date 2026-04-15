@@ -25,6 +25,7 @@
                     <a class="nav-link" href="{{ url_for('logout') }}">Выход</a>
 
                 {% else %}
+                    <a class="nav-link {% if request.endpoint == 'sensor_mapping' %}active{% endif %}" href="{{ url_for('sensor_mapping') }}">Расположение датчиков</a>
                     <a class="nav-link" href="{{ url_for('login') }}">Админка</a>
                 {% endif %}
             </div>
