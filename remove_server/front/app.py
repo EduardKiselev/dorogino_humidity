@@ -13,6 +13,7 @@ import json
 import os
 from statistics import stdev, mean
 from collections import defaultdict
+from sqlalchemy.dialects.postgresql import insert
 
 # Global scheduler instance
 scheduler = None
@@ -606,17 +607,24 @@ def settings():
                     for hour in range(24):
                         humidity = float(request.form.get(f'humidity_s{sensor_id}_d{day}_h{hour}'))
                         
-                        stmt = db.insert(Setting).values(
-                            sensor_id=sensor_id, day_of_week=day, hour_of_day=hour,
-                            humidity=humidity, histeresys_up=h_up, histeresys_down=h_down,
+                        stmt = insert(Setting).values(
+                            sensor_id=sensor_id, 
+                            day_of_week=day, 
+                            hour_of_day=hour,
+                            humidity=humidity, 
+                            histeresys_up=h_up, 
+                            histeresys_down=h_down,
                             timestamp=datetime.now(timezone.utc)
                         )
+
                         stmt = stmt.on_conflict_do_update(
                             index_elements=['sensor_id', 'day_of_week', 'hour_of_day'],
-                            set_=dict(humidity=stmt.excluded.humidity,
-                                      histeresys_up=stmt.excluded.histeresys_up,
-                                      histeresys_down=stmt.excluded.histeresys_down,
-                                      timestamp=stmt.excluded.timestamp)
+                            set_=dict(
+                                humidity=stmt.excluded.humidity,
+                                histeresys_up=stmt.excluded.histeresys_up,
+                                histeresys_down=stmt.excluded.histeresys_down,
+                                timestamp=stmt.excluded.timestamp
+                            )
                         )
                         db.session.execute(stmt)
             db.session.commit()
