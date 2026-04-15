@@ -316,8 +316,21 @@ def charts():
 @app.route('/flex-chart')
 def flex_chart():
     """Гибкий график с фильтрами"""
-    sensor_ids = sorted([s.sensor_id for s in SensorReading.query.with_entities(SensorReading.sensor_id).distinct()])
-    return render_template('flex_chart.html', sensor_ids=sensor_ids, is_admin=session.get('is_admin'))
+    # Получаем уникальные ID датчиков
+    sensor_ids = get_all_sensor_ids()
+    
+    locations = {loc.sensor_id: loc.description for loc in SensorLocation.query.all()}
+    
+    sensors_with_labels = [
+        {'id': sid, 'label': f"Датчик {sid} - {locations.get(sid, 'без описания')}"}
+        for sid in sensor_ids
+    ]
+    
+    return render_template(
+        'flex_chart.html', 
+        sensors=sensors_with_labels,  # ← передаём новый список
+        is_admin=session.get('is_admin')
+    )
 
 @app.route('/api/flex-chart-data')
 def api_flex_chart_data():
