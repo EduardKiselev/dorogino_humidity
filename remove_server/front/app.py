@@ -772,23 +772,31 @@ def init_scheduler():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        # Инициализация настроек для 5 датчиков, если их нет
-        for sensor_id in range(1, 6):
-            existing = Setting.query.filter_by(sensor_id=sensor_id).first()
-            if not existing:
-                for hour in range(24):  # Создаем настройки для всех 24 часов
-                    default_setting = Setting(
-                        sensor_id=sensor_id,
-                        hour_of_day=hour,
-                        humidity=60.0,
-                        histeresys_up=5.0,
-                        histeresys_down=5.0
-                    )
-                    db.session.add(default_setting)
+
+        sensor_ids = [r[0] for r in db.session.query(SensorReading.sensor_id)
+                      .distinct().order_by(SensorReading.sensor_id).all()]
+        if not sensor_ids:
+            sensor_ids = []
+
+        for sensor_id in sensor_ids:
+                    for day in range(7):
+                        for hour in range(24):
+                            existing = Setting.query.filter_by(
+                                sensor_id=sensor_id,
+                                day_of_week=day, 
+                                hour_of_day=hour
+                            ).first()
+                            if not existing:
+                                db.session.add(Setting(
+                                    sensor_id=sensor_id,
+                                    day_of_week=day,
+                                    hour_of_day=hour,
+                                    humidity=60.0,
+                                    histeresys_up=5.0,
+                                    histeresys_down=5.0,
+                                    timestamp=datetime.now(timezone.utc)
+                                ))
         db.session.commit()
-        
-        # Initialize the scheduler after db initialization
-        init_scheduler()
         
     app.run(host='0.0.0.0', port=5000, debug=True)
 
