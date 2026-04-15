@@ -589,100 +589,55 @@ def manage_sensor_locations():
 @app.route('/settings', methods=['GET', 'POST'])
 @admin_required
 def settings():
-    """Страница настроек (только для админа) - теперь для 5 датчиков с почасовой настройкой влажности"""
+    # Динамически получаем список датчиков из БД
+    sensor_ids = [r[0] for r in db.session.query(SensorReading.sensor_id).distinct().order_by(SensorReading.sensor_id).all()]
+    if not sensor_ids:
+        sensor_ids = list(range(1, 6))  # fallback
+    
+    DAYS = [(0, 'Пн'), (1, 'Вт'), (2, 'Ср'), (3, 'Чт'), (4, 'Пт'), (5, 'Сб'), (6, 'Вс')]
+    
     if request.method == 'POST':
         try:
-            for sensor_id in range(1, 6):
-                # Получаем гистерезис из формы (одинаковый для всех часов)
-                histeresys_up = float(request.form.get(f'histeresys_up_sensor_{sensor_id}'))
-                histeresys_down = float(request.form.get(f'histeresys_down_sensor_{sensor_id}'))
+            for sensor_id in sensor_ids:
+                h_up = float(request.form.get(f'histeresys_up_sensor_{sensor_id}'))
+                h_down = float(request.form.get(f'histeresys_down_sensor_{sensor_id}'))
                 
-                if not (0 <= histeresys_up <= 20):
-                    raise ValueError(f'Верхний гистерезис для датчика {sensor_id} должен быть от 0 до 20%')
-                if not (0 <= histeresys_down <= 20):
-                    raise ValueError(f'Нижний гистерезис для датчика {sensor_id} должен быть от 0 до 20%')
-                
-                # Обновляем настройки для всех 24 часов
-                for hour in range(24):
-                    humidity = float(request.form.get(f'humidity_sensor_{sensor_id}_hour_{hour}'))
-                    
-                    if not (0 <= humidity <= 100):
-                        raise ValueError(f'Порог влажности для датчика {sensor_id}, час {hour} должен быть от 0 до 100%')
-                    
-                    # Получаем текущую настройку для этого датчика и часа
-                    current_setting = Setting.query.filter_by(
-                        sensor_id=sensor_id, 
-                        hour_of_day=hour
-                    ).order_by(Setting.timestamp.desc()).first()
-                    
-                    # Логируем изменения, если они есть
-                    if current_setting:
-                        if (current_setting.humidity != humidity or 
-                            current_setting.histeresys_up != histeresys_up or 
-                            current_setting.histeresys_down != histeresys_down):
-                            log_setting_change(
-                                sensor_id, 
-                                hour,
-                                humidity, 
-                                histeresys_up, 
-                                histeresys_down
-                            )
-                            # Обновляем существующую настройку
-                            current_setting.humidity = humidity
-                            current_setting.histeresys_up = histeresys_up
-                            current_setting.histeresys_down = histeresys_down
-                            current_setting.timestamp = datetime.now(timezone.utc)
-                    else:
-                        # Используем UPSERT для обработки возможного конфликта уникальности
+                for day in range(7):
+                    for hour in range(24):
+                        humidity = float(request.form.get(f'humidity_s{sensor_id}_d{day}_h{hour}'))
+                        
                         stmt = db.insert(Setting).values(
-                            sensor_id=sensor_id,
-                            hour_of_day=hour,
-                            humidity=humidity,
-                            histeresys_up=histeresys_up,
-                            histeresys_down=histeresys_down,
+                            sensor_id=sensor_id, day_of_week=day, hour_of_day=hour,
+                            humidity=humidity, histeresys_up=h_up, histeresys_down=h_down,
                             timestamp=datetime.now(timezone.utc)
                         )
                         stmt = stmt.on_conflict_do_update(
-                            index_elements=['sensor_id', 'hour_of_day'],
-                            set_=dict(
-                                humidity=stmt.excluded.humidity,
-                                histeresys_up=stmt.excluded.histeresys_up,
-                                histeresys_down=stmt.excluded.histeresys_down,
-                                timestamp=stmt.excluded.timestamp
-                            )
+                            index_elements=['sensor_id', 'day_of_week', 'hour_of_day'],
+                            set_=dict(humidity=stmt.excluded.humidity,
+                                      histeresys_up=stmt.excluded.histeresys_up,
+                                      histeresys_down=stmt.excluded.histeresys_down,
+                                      timestamp=stmt.excluded.timestamp)
                         )
                         db.session.execute(stmt)
-            
             db.session.commit()
-            flash('Настройки для всех датчиков и часов успешно сохранены!', 'success')
-        except (ValueError, TypeError) as e:
+            flash('Настройки сохранены', 'success')
+        except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка: {str(e)}', 'danger')
+            flash(f'Ошибка: {e}', 'danger')
     
-    # Получаем настройки для всех 5 датчиков и всех 24 часов
+    # Загрузка текущих настроек
     sensor_settings = {}
-    for sensor_id in range(1, 6):
-        # Получаем все настройки для данного датчика
-        settings_for_sensor = Setting.query.filter_by(sensor_id=sensor_id).order_by(Setting.hour_of_day).all()
-        
-        # Если настроек нет, создаем с дефолтными значениями
-        if not settings_for_sensor:
-            for hour in range(24):
-                default_setting = Setting(
-                    sensor_id=sensor_id,
-                    hour_of_day=hour,
-                    humidity=60.0,
-                    histeresys_up=5.0,
-                    histeresys_down=5.0
-                )
-                db.session.add(default_setting)
-            db.session.commit()
-            settings_for_sensor = Setting.query.filter_by(sensor_id=sensor_id).order_by(Setting.hour_of_day).all()
-        
-        sensor_settings[sensor_id] = settings_for_sensor
+    for sid in sensor_ids:
+        settings_list = Setting.query.filter_by(sensor_id=sid).all()
+        # Структура: {day: {hour: setting}}
+        sensor_settings[sid] = {d: {h: None for h in range(24)} for d in range(7)}
+        for s in settings_list:
+            sensor_settings[sid][s.day_of_week][s.hour_of_day] = s
     
-    return render_template('settings.html', sensor_settings=sensor_settings)
-
+    return render_template('settings.html', 
+                          sensor_ids=sensor_ids, 
+                          sensor_settings=sensor_settings,
+                          days=DAYS)
 
 def control_humidifier_job():
     """
@@ -692,6 +647,9 @@ def control_humidifier_job():
     print("🚀 Запуск функции контроля влажности")
     with app.app_context():  # Ensure we have an application context
         try:
+            now = datetime.now(timezone.utc)
+            current_day = now.weekday()  # 0=Пн
+            current_hour = now.hour 
             # Calculate time threshold (15 minutes ago)
             fifteen_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=15)
             
@@ -715,9 +673,9 @@ def control_humidifier_job():
                 current_humidity = reading.humidity
                 print(f"CRON JOB: Sensor ID: {sensor_id}, Current Humidity: {current_humidity}")
                 # Get the setting for this sensor and current hour
-                current_hour = reading.timestamp.hour
                 setting = Setting.query.filter_by(
-                    sensor_id=sensor_id,
+                    sensor_id=reading.sensor_id,
+                    day_of_week=current_day,
                     hour_of_day=current_hour
                 ).first()
                 

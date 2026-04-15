@@ -64,13 +64,14 @@ class Setting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now())
     sensor_id = db.Column(db.Integer, nullable=False)  # ID датчика (1-5)
+    day_of_week = db.Column(db.Integer, nullable=False) 
     hour_of_day = db.Column(db.Integer, nullable=False)  # Час суток (0-23)
     humidity = db.Column(db.Float)  # порог влажности
     histeresys_up = db.Column(db.Float)  # верхний гистерезис
     histeresys_down = db.Column(db.Float)  # нижний гистерезис
     
     # Уникальное ограничение для комбинации sensor_id и hour_of_day
-    __table_args__ = (db.UniqueConstraint('sensor_id', 'hour_of_day'),)
+    __table_args__ = (db.UniqueConstraint('sensor_id', 'day_of_week', 'hour_of_day'),)
     
     def to_dict(self):
         return {

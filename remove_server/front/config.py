@@ -17,7 +17,6 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Простой пароль для администратора
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
     # Force admin password change in production
     if ADMIN_PASSWORD == 'admin123':

@@ -1,65 +1,83 @@
 <!-- templates/settings.html -->
 {% extends "base.html" %}
-
-{% block title %}Настройки{% endblock %}
-
 {% block content %}
-<h2>⚙️ Настройки системы управления влажностью</h2>
+<h2>⚙️ Настройки влажности</h2>
 
-<div class="card">
-    <div class="card-body">
-        <form method="post">
-            {% for sensor_id in range(1, 6) %}
-            <div class="mb-4 border-bottom pb-3">
-                <h4>Датчик {{ sensor_id }}</h4>
-                
-                <div class="mb-3">
-                    <label class="form-label"><strong>Верхний гистерезис (%)</strong></label>
-                    <input type="number" class="form-control" name="histeresys_up_sensor_{{ sensor_id }}" 
-                           value="{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_up) }}" 
-                           min="0" max="20" step="0.1" required>
-                    <div class="form-text">
-                        Разница между включением и выключением сверху (одинакова для всех часов)
-                    </div>
-                </div>
+<form method="post" id="settingsForm">
+  <!-- Вкладки дней недели -->
+  <ul class="nav nav-tabs mb-3" id="dayTabs">
+    {% for day_code, day_name in days %}
+      <li class="nav-item">
+        <button class="nav-link {% if loop.first %}active{% endif %}" 
+                type="button" data-bs-toggle="tab" data-bs-target="#day{{ day_code }}">
+          {{ day_name }}
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
 
-                <div class="mb-3">
-                    <label class="form-label"><strong>Нижний гистерезис (%)</strong></label>
-                    <input type="number" class="form-control" name="histeresys_down_sensor_{{ sensor_id }}" 
-                           value="{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_down) }}" 
-                           min="0" max="20" step="0.1" required>
-                    <div class="form-text">
-                        Разница между включением и выключением снизу (одинакова для всех часов)
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-12">
-                        <h5>Порог влажности по часам (%)</h5>
-                        <div class="row g-2">
-                            {% for hour in range(24) %}
-                            <div class="col-md-2 col-sm-3 col-4">
-                                <label class="form-label small">Час {{ "%02d"|format(hour) }}</label>
-                                <input type="number" class="form-control form-control-sm" 
-                                       name="humidity_sensor_{{ sensor_id }}_hour_{{ hour }}" 
-                                       value="{{ "%.1f"|format(sensor_settings[sensor_id][hour].humidity) }}" 
-                                       min="0" max="100" step="0.1" required>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="alert alert-info mt-3">
-                    <strong>Текущие значения для датчика {{ sensor_id }}:</strong><br>
-                    Верхний гистерезис: <strong>{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_up) }}%</strong><br>
-                    Нижний гистерезис: <strong>{{ "%.1f"|format(sensor_settings[sensor_id][0].histeresys_down) }}%</strong>
-                </div>
+  <div class="tab-content">
+    {% for day_code, day_name in days %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="day{{ day_code }}">
+      
+      {% for sensor_id in sensor_ids %}
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>Датчик #{{ sensor_id }}</strong>
+          <div class="d-flex gap-2">
+            <input type="number" name="histeresys_up_sensor_{{ sensor_id }}" 
+                   class="form-control form-control-sm" style="width:80px"
+                   value="{{ sensor_settings[sensor_id][day_code][0].histeresys_up if sensor_settings[sensor_id][day_code][0] else 5.0 }}"
+                   min="0" max="20" step="0.1" placeholder="↑ гистерезис" title="Верхний гистерезис">
+            <input type="number" name="histeresys_down_sensor_{{ sensor_id }}" 
+                   class="form-control form-control-sm" style="width:80px"
+                   value="{{ sensor_settings[sensor_id][day_code][0].histeresys_down if sensor_settings[sensor_id][day_code][0] else 5.0 }}"
+                   min="0" max="20" step="0.1" placeholder="↓ гистерезис" title="Нижний гистерезис">
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="row g-1">
+            {% for hour in range(24) %}
+            <div class="col-3 col-sm-2 col-md-1">
+              <label class="form-label small text-muted mb-0">{{ "%02d"|format(hour) }}</label>
+              <input type="number" 
+                     name="humidity_s{{ sensor_id }}_d{{ day_code }}_h{{ hour }}"
+                     class="form-control form-control-sm"
+                     value="{{ sensor_settings[sensor_id][day_code][hour].humidity if sensor_settings[sensor_id][day_code][hour] else 60.0 }}"
+                     min="0" max="100" step="0.1">
             </div>
             {% endfor %}
-
-            <button type="submit" class="btn btn-success">Сохранить настройки для всех датчиков и часов</button>
-        </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      
     </div>
-</div>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="btn btn-success mt-3">💾 Сохранить все настройки</button>
+  <button type="button" class="btn btn-outline-secondary mt-3" id="copyDayBtn">📋 Скопировать день на все</button>
+</form>
+
+<script>
+// JS: копирование настроек выбранного дня на остальные
+document.getElementById('copyDayBtn').addEventListener('click', function() {
+  const sourceDay = document.querySelector('#dayTabs .nav-link.active').dataset.bsTarget.replace('#day', '');
+  if (!confirm(`Скопировать настройки дня ${sourceDay} на все остальные дни?`)) return;
+  
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    const targetDay = pane.id.replace('day', '');
+    if (targetDay === sourceDay) return;
+    
+    // Копируем значения инпутов влажности
+    document.querySelectorAll(`#day${sourceDay} input[name^="humidity_"]`).forEach(srcInput => {
+      const name = srcInput.name; // humidity_s1_d0_h5
+      const newName = name.replace(/_d\d+_/, `_d${targetDay}_`);
+      const tgtInput = document.querySelector(`input[name="${newName}"]`);
+      if (tgtInput) tgtInput.value = srcInput.value;
+    });
+  });
+});
+</script>
 {% endblock %}
