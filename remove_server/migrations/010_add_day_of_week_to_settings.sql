@@ -6,7 +6,7 @@ ALTER TABLE settings ADD COLUMN IF NOT EXISTS day_of_week INTEGER;
 -- 2. Удаляем старое UNIQUE ограничение.
 -- ⚠️ Замените 'settings_unique_sensor_hour' на реальное имя из вашей БД.
 -- Узнать имя: SELECT conname FROM pg_constraint WHERE conrelid = 'settings'::regclass AND contype = 'u';
-ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_unique_sensor_hour;
+ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_sensor_id_hour_of_day_key;
 
 -- 3. Создаём новое ограничение (пока допускает NULL)
 ALTER TABLE settings ADD CONSTRAINT settings_unique_sensor_day_hour 
