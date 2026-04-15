@@ -1,4 +1,3 @@
--- Предварительно сделайте бэкап!
 -- Конвертируем naive-время (которое было в GMT+7) в UTC:
 UPDATE sensor_readings 
 SET timestamp = timestamp AT TIME ZONE 'Asia/Novosibirsk' AT TIME ZONE 'UTC'

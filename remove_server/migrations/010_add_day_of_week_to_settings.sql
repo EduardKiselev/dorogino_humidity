@@ -1,10 +1,7 @@
--- 010_add_day_of_week_to_settings.sql
-
 -- 1. Добавляем столбец
 ALTER TABLE settings ADD COLUMN IF NOT EXISTS day_of_week INTEGER;
 
 -- 2. Удаляем старое UNIQUE ограничение.
--- ⚠️ Замените 'settings_unique_sensor_hour' на реальное имя из вашей БД.
 -- Узнать имя: SELECT conname FROM pg_constraint WHERE conrelid = 'settings'::regclass AND contype = 'u';
 ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_sensor_id_hour_of_day_key;
 
@@ -25,7 +22,6 @@ DELETE FROM settings WHERE day_of_week IS NULL;
 
 -- 6. Делаем столбец обязательным
 ALTER TABLE settings ALTER COLUMN day_of_week SET NOT NULL;
-
 -- 7. Индекс для cron-задачи
 CREATE INDEX IF NOT EXISTS idx_settings_sensor_day_hour 
     ON settings (sensor_id, day_of_week, hour_of_day);
