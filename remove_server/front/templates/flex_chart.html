@@ -22,7 +22,7 @@
         </div>
       <div class="col-md-3">
         <label class="form-label">Сенсоры</label>
-        <div class="border rounded p-2" style="max-height:100px;overflow-y:auto">
+        <div class="border rounded p-2" style="max-height:200px;overflow-y:auto">
             {% for sensor in sensors %}
             <div class="form-check">
             <input class="form-check-input" type="checkbox" name="sensors" value="{{ sensor.id }}" id="sen{{ sensor.id }}" checked>
