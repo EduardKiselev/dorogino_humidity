@@ -322,7 +322,7 @@ def flex_chart():
     locations = {loc.sensor_id: loc.description for loc in SensorLocation.query.all()}
     
     sensors_with_labels = [
-        {'id': sid, 'label': f"Датчик {sid} - {locations.get(sid, 'без описания')}"}
+        {'id': sid, 'label': f"{sid}-{locations.get(sid, 'без описания')}"}
         for sid in sensor_ids
     ]
     
