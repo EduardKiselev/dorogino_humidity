@@ -12,7 +12,10 @@
         <button class="nav-link {% if loop.first %}active{% endif %}" 
                 data-bs-toggle="tab" 
                 data-bs-target="#sensor-{{ sensor_id }}">
-            Сенсор {{ sensor_id }}
+            {{ sensor_id }}-
+            {% if sensor_id in sensor_locations and sensor_locations[sensor_id] %}
+                — {{ sensor_locations[sensor_id] }}
+            {% endif %}
         </button>
     </li>
     {% endfor %}

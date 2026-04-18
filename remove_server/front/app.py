@@ -298,8 +298,8 @@ def charts():
         'timestamp': r.timestamp.isoformat()
     } for r in year_readings]
     
-    # Получаем уникальные ID сенсоров
     sensor_ids = sorted(list(set(r['sensor_id'] for r in day_data + month_data + year_data)))
+    locations = {loc.sensor_id: loc.description for loc in SensorLocation.query.all()}
     
     return render_template(
         'charts.html',
@@ -310,6 +310,7 @@ def charts():
         month_data=month_data,
         year_data=year_data,
         sensor_ids=sensor_ids,
+        sensor_locations=locations,
         is_admin=session.get('is_admin')
     )
 
