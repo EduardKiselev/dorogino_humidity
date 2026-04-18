@@ -5,7 +5,7 @@ services:
     command: [
       "postgres",
       "-c", "log_connections=on",
-      "-c", "log_line_prefix=%m [%p] %q%h %u %a "  # Добавит время, PID, IP, пользователя в лог
+      "-c", "log_line_prefix=%m [%p] %q%h %u %a "
     ]
     environment:
       POSTGRES_DB: ${DB_NAME:-sensor_data}
@@ -17,16 +17,23 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_network
+    restart: unless-stopped  # ← добавлено
+    healthcheck:  # ← полезно для контроля состояния БД
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   collector:
     build:
       context: ./collector
       dockerfile: Dockerfile
     container_name: flask_collector
-    expose:  # ← изменил ports на expose, т.к. доступ через Nginx
+    expose:
       - "5000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy  # ← ждём готовности БД
     networks:
       - app_network
     environment:
@@ -52,11 +59,13 @@ services:
       context: ./front
       dockerfile: Dockerfile
     container_name: flask_front
-    expose:  # ← изменил ports на expose, т.к. доступ через Nginx
+    expose:
       - "5000"
     depends_on:
-      - db
-      - collector
+      db:
+        condition: service_healthy
+      collector:
+        condition: service_started
     networks:
       - app_network
     environment:
@@ -71,7 +80,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-trololo}
       - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
     volumes:
-      - /root/screen:/root/screen:ro  # ← Примонтируйте папку со скриншотами (read-only)
+      - /root/screen:/root/screen:ro
     restart: unless-stopped
 
   worker:
@@ -85,18 +94,17 @@ services:
       - TZ=Asia/Novosibirsk
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-sensor_data}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
-    # healthcheck можно оставить, но проверить python-процесс:
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'python.*worker.py' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Nginx reverse proxy
   nginx:
     build: ./nginx
     container_name: nginx_proxy
@@ -116,7 +124,6 @@ services:
       - app_network
     restart: unless-stopped
 
-  # Certbot для получения сертификатов
   certbot:
     image: certbot/certbot:latest
     container_name: certbot_service
@@ -131,6 +138,7 @@ services:
         sleep 12h & wait $${!};
       done;
       "
+    restart: unless-stopped  # ← добавлено
 
   migrate:
     build:
@@ -138,7 +146,8 @@ services:
       dockerfile: Dockerfile
     container_name: db_migrator
     depends_on:
-      - db
+      db:
+        condition: service_healthy  # ← ждём готовности БД перед миграцией
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -150,6 +159,7 @@ services:
     volumes:
       - ./migrations:/app/migrations
     command: ["python", "migrate.py", "apply"]
+    restart: on-failure:5  # ← перезапуск только при ошибке, макс. 5 попыток
 
 volumes:
   postgres_data:
