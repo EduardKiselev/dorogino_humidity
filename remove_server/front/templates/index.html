@@ -25,7 +25,11 @@
                 <td>{{ reading.sensor_id }}</td>
                 <td>
                     {% if reading.humidity is not none %}
-                        <span class="badge {% if reading.humidity > 70 %}bg-danger{% elif reading.humidity < 40 %}bg-warning{% else %}bg-success{% endif %}">
+                        <span class="badge {% if reading.humidity > 60 %}bg-danger
+                            {% elif reading.humidity > 45 %}bg-warning
+                            {% elif reading.humidity > 35 %}bg-success
+                            {% elif reading.humidity > 20 %}bg-warning
+                            {% else %}bg-danger{% endif %}">
                             {{ "%.1f"|format(reading.humidity) }}
                         </span>
                     {% else %}
