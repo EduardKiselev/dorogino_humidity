@@ -6,6 +6,26 @@
 <div class="container-fluid">
     <h1>Схема цеха</h1>
     
+    <!-- Стили для карточек датчиков (единые для всех) -->
+    <style>
+        .sensor-info-card {
+            background: white;
+            padding: 3px;
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            border: 1px solid #007bff;
+            font-size: 0.6em;
+            line-height: 1.2;
+            white-space: nowrap;
+            min-width: 80px;
+            text-align: center;
+            pointer-events: none; /* клики проходят сквозь карточку */
+        }
+        .sensor-marker {
+            z-index: 10;
+        }
+    </style>
+    
     <div class="row mb-3">
         <div class="col-md-12">
             <label for="timeSlider">Select Time:</label>
@@ -13,7 +33,6 @@
             
             <div id="timeDisplay" class="text-muted small mb-2 fw-bold"></div>
             
-            <!-- Контейнер меток: relative для абсолютного позиционирования детей -->
             <div id="sliderLabelsContainer" style="position: relative; height: 25px; width: 100%;">
                 <!-- Labels will be added by JavaScript -->
             </div>
@@ -28,8 +47,8 @@
                      data-sensor-id="{{ sensor.sensor_id }}"
                      style="position: absolute; left: {{ sensor.x }}%; top: {{ sensor.y }}%; transform: translate(-50%, -50%); cursor: pointer;"
                      title="{{ sensor.description }}">
-                    <div class="sensor-info-card" style="background: white; padding: 3px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 1px solid #007bff; font-size: 0.6em;">
-                        <strong>Sensor {{ sensor.sensor_id }}</strong><br>
+                    <div class="sensor-info-card">
+                        <strong>S{{ sensor.sensor_id }}</strong><br>
                         
                         {% if sensor.temperature is not none %}
                             T: {{ "%.1f"|format(sensor.temperature) }}°C
@@ -40,12 +59,11 @@
                         {% if sensor.humidity is not none %}
                             H: {{ "%.1f"|format(sensor.humidity) }}%
                             {% if sensor.humidity_std is not none %}
-                                <br><small>σ: {{ "%.1f"|format(sensor.humidity_std) }}%</small>
+                                <br><small>σ:{{ "%.1f"|format(sensor.humidity_std) }}%</small>
                             {% endif %}
                         {% else %}
                             No data
                         {% endif %}
-                        
                     </div>
                 </div>
                 {% endfor %}
@@ -70,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function() {
     timeSlider.max = 1440;
     timeSlider.value = 0;
     
-    // Форматирование времени в GMT+7 для отображения
     function formatGMT7(date) {
         return date.toLocaleString('ru-RU', {
             timeZone: 'Asia/Bangkok',
@@ -112,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function() {
         timeDisplay.textContent = 'Время: ' + formatGMT7(time);
     }
     
-    // Debounce для предотвращения частых запросов
     let fetchTimeout;
     timeSlider.addEventListener('input', function() {
         clearTimeout(fetchTimeout);
@@ -123,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     });
     
-    // Форматирует дату как ISO-строку с явным указанием +07:00
     function formatAsGMT7ISO(date) {
         const gmt7Time = new Date(date.getTime() + 7 * 60 * 60 * 1000);
         const iso = gmt7Time.toISOString();
@@ -146,27 +161,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateDiagramWithData(sensors) {
+        // Удаляем только динамические маркеры
         diagramContainer.querySelectorAll('.sensor-marker.dynamic').forEach(m => m.remove());
         
         sensors.forEach(sensor => {
             const marker = document.createElement('div');
             marker.className = 'sensor-marker dynamic';
             marker.dataset.sensorId = sensor.sensor_id;
-            marker.style.cssText = `position:absolute;left:${sensor.x}%;top:${sensor.y}%;transform:translate(-50%,-50%);cursor:pointer;z-index:10;`;
+            marker.style.cssText = `position:absolute;left:${sensor.x}%;top:${sensor.y}%;transform:translate(-50%,-50%);cursor:pointer;`;
             marker.title = sensor.description || `Sensor ${sensor.sensor_id}`;
             
-            // Базовые значения
-            const tempVal = sensor.temperature != null ? sensor.temperature.toFixed(1) + '°C' : 'No data';
-            const humVal = sensor.humidity != null ? sensor.humidity.toFixed(1) + '%' : 'No data';
+            // Форматируем значения компактно
+            const tempVal = sensor.temperature != null ? sensor.temperature.toFixed(1) + '°C' : 'N/A';
+            const humVal = sensor.humidity != null ? sensor.humidity.toFixed(1) + '%' : 'N/A';
+            const humStd = sensor.humidity_std != null ? `<br><small>σ:${sensor.humidity_std.toFixed(1)}%</small>` : '';
             
-            // Только humidity_std
-            const humStd = sensor.humidity_std != null ? `<br><small>σ: ${sensor.humidity_std.toFixed(1)}%</small>` : '';
-            
+            // Короткий формат номера: #123 вместо Sensor 123
             marker.innerHTML = `
-                <div class="sensor-info-card" style="background:white;padding:4px 6px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.25);border:1px solid #007bff;font-size:0.75em;min-width:110px;text-align:center;">
-                    <strong>#${sensor.sensor_id}</strong><br>
-                    T: ${tempVal}<br>
-                    H: ${humVal}${humStd}
+                <div class="sensor-info-card">
+                    <strong>S${sensor.sensor_id}</strong><br>
+                    T:${tempVal}<br>
+                    H:${humVal}${humStd}
                 </div>
             `;
             
@@ -176,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     `Sensor ${sensor.sensor_id}`,
                     sensor.description || '',
                     `T: ${tempVal}`,
-                    `H: ${humVal}${humStd}`
+                    `H: ${humVal}${sensor.humidity_std != null ? ' σ:' + sensor.humidity_std.toFixed(1) + '%' : ''}`
                 ].filter(Boolean).join('\n');
                 alert(details);
             });
