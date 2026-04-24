@@ -17,7 +17,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_network
-    restart: unless-stopped  # ← добавлено
+    restart: unless-stopped
     healthcheck:  # ← полезно для контроля состояния БД
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
@@ -113,7 +113,7 @@ services:
       - "443:443"
     volumes:
       - ./certs:/etc/nginx/certs
-      - ./nginx/logs:/var/log/nginx
+      - /var/log/myapp/nginx:/var/log/nginx:rw
       - ./certbot/www:/var/www/certbot
     extra_hosts:
       - "host-gateway:host-gateway" 
