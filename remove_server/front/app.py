@@ -80,7 +80,6 @@ def get_sensor_status():
         subquery.c.sensor_id,
         subquery.c.max_time
     ).all()
-    print(latest_readings)
     sensors_status = {}
     for sensor_id, last_timestamp in latest_readings:
         # Make sure last_timestamp is timezone-aware for comparison
@@ -186,7 +185,6 @@ def kiln_stats():
             "screen_date": row.screen_date,
             "data_list": data_list
         })
-    print(records)
     return render_template(
         'kiln_stats.html',
         records=records,
@@ -824,6 +822,7 @@ if __name__ == '__main__':
                                     timestamp=datetime.now(timezone.utc)
                                 ))
         db.session.commit()
+        init_scheduler()
         
     app.run(host='0.0.0.0', port=5000, debug=True)
 
