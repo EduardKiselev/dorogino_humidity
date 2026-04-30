@@ -49,11 +49,12 @@ services:
       context: ./controller_manager
       dockerfile: Dockerfile
     container_name: controller_manager
-    ports:
-      - "5001:5001"
-      - "80:80"
-    networks:
-      - app_network
+    # ports:
+    #   - "5001:5001"
+    #   - "80:80"
+    network_mode: host 
+    # networks:
+      # - app_network
     environment:
       - TZ=Asia/Novosibirsk
       - PYTHONUNBUFFERED=1
