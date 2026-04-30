@@ -102,7 +102,7 @@ def get_sensor_status():
     
     return sensors_status
 
-def calculate_humidity_ratio(T, RH, pressure_kpa=101.325):
+def calculate_absolute_humidity(T, RH, pressure_kpa=99):
     """
     Влажность в г/кг сухого воздуха.
     Формула Тетенса (Монтейт и Ансуорт, 2008).
