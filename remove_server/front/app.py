@@ -101,18 +101,21 @@ def get_sensor_status():
     
     return sensors_status
 
-def calculate_absolute_humidity(T, RH):
+def calculate_humidity_ratio(T, RH, pressure_hpa=1013.25):
     """
-    Рассчитывает абсолютную влажность (г/м³) по температуре (°C) и относительной влажности (%).
-    Формула на основе уравнения Тетенса + Клапейрона–Менделеева.
+    Рассчитывает влажность в г/кг сухого воздуха.
+    T: температура, °C
+    RH: относительная влажность, %
+    pressure_hpa: атмосферное давление, гПа (по умолчанию 1013.25)
     """
     import math
     if T is None or RH is None:
         return None
     try:
-        e_s = 6.112 * math.exp((17.67 * T) / (T + 243.5))  # давление насыщения, гПа
-        e = e_s * RH / 100                                   # фактическое давление пара
-        return round((2.1674 * e) / (T + 273.15), 2)         # г/м³
+        e_s = 6.112 * math.exp((17.67 * T) / (T + 243.5))  # гПа
+        e = e_s * RH / 100                                   # гПа
+        w = 622 * e / (pressure_hpa - e)                     # г/кг
+        return round(w, 2)
     except (ValueError, ZeroDivisionError, OverflowError):
         return None
 
