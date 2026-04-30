@@ -51,6 +51,7 @@ services:
     container_name: controller_manager
     ports:
       - "5001:5001"
+      - "80:80"
     networks:
       - app_network
     environment:
