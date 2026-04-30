@@ -80,5 +80,7 @@ if __name__ == '__main__':
     print("   GET  /<controller_id>/ON  - Turn controller ON")
     print("   GET  /<controller_id>/OFF - Turn controller OFF")
     print("   GET  /health              - Health check")
+    print(IP_MAP[1])
+    print(IP_MAP[2])
     
     app.run(host='0.0.0.0', port=5001, debug=True)
