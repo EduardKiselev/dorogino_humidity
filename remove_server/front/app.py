@@ -101,7 +101,7 @@ def get_sensor_status():
     
     return sensors_status
 
-def calculate_humidity_ratio(T, RH, pressure_hpa=1013.25):
+def calculate_absolute_humidity(T, RH, pressure_hpa=990):
     """
     Рассчитывает влажность в г/кг сухого воздуха.
     T: температура, °C
