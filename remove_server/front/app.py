@@ -14,6 +14,7 @@ import os
 from statistics import stdev, mean
 from collections import defaultdict
 from sqlalchemy.dialects.postgresql import insert
+import math
 
 # Global scheduler instance
 scheduler = None
@@ -101,22 +102,25 @@ def get_sensor_status():
     
     return sensors_status
 
-def calculate_absolute_humidity(T, RH, pressure_hpa=990):
+def calculate_humidity_ratio(T, RH, pressure_kpa=101.325):
     """
-    Рассчитывает влажность в г/кг сухого воздуха.
+    Влажность в г/кг сухого воздуха.
+    Формула Тетенса (Монтейт и Ансуорт, 2008).
     T: температура, °C
     RH: относительная влажность, %
-    pressure_hpa: атмосферное давление, гПа (по умолчанию 1013.25)
+    pressure_kpa: атмосферное давление, кПа (по умолчанию 101.325)
     """
-    import math
     if T is None or RH is None:
         return None
     try:
-        e_s = 6.112 * math.exp((17.67 * T) / (T + 243.5))  # гПа
-        e = e_s * RH / 100                                   # гПа
-        w = 622 * e / (pressure_hpa - e)                     # г/кг
+        # Давление насыщения, кПа
+        e_s = 0.61078 * math.exp((17.27 * T) / (T + 237.3))
+        # Фактическое давление пара, кПа
+        e = e_s * RH / 100
+        # Массовое отношение, г/кг
+        w = 622 * e / (pressure_kpa - e)
         return round(w, 2)
-    except (ValueError, ZeroDivisionError, OverflowError):
+    except:
         return None
 
 # === Роуты ===
