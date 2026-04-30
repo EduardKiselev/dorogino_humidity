@@ -14,6 +14,7 @@
                 <th>Датчик</th>
                 <th>Влажность (%)</th>
                 <th>Температура (°C)</th>
+                <th>Абс. влажность (г/м³)</th>
                 <th>IP-Сенсор</th>
                 <th>IP-Коробочка</th>           
             </tr>
@@ -39,6 +40,15 @@
                 <td>
                     {% if reading.temperature is not none %}
                         {{ "%.1f"|format(reading.temperature) }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if reading.absolute_humidity is not none %}
+                        <span class="badge bg-info text-dark">
+                            {{ reading.absolute_humidity }}
+                        </span>
                     {% else %}
                         -
                     {% endif %}

@@ -101,6 +101,21 @@ def get_sensor_status():
     
     return sensors_status
 
+def calculate_absolute_humidity(T, RH):
+    """
+    Рассчитывает абсолютную влажность (г/м³) по температуре (°C) и относительной влажности (%).
+    Формула на основе уравнения Тетенса + Клапейрона–Менделеева.
+    """
+    import math
+    if T is None or RH is None:
+        return None
+    try:
+        e_s = 6.112 * math.exp((17.67 * T) / (T + 243.5))  # давление насыщения, гПа
+        e = e_s * RH / 100                                   # фактическое давление пара
+        return round((2.1674 * e) / (T + 273.15), 2)         # г/м³
+    except (ValueError, ZeroDivisionError, OverflowError):
+        return None
+
 # === Роуты ===
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -136,6 +151,10 @@ def index():
         if reading.timestamp.tzinfo is None:
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
 
+        reading.absolute_humidity = calculate_absolute_humidity(
+            reading.temperature, 
+            reading.humidity
+        )
     
     return render_template(
         'index.html', 
