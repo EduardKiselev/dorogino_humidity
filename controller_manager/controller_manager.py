@@ -28,6 +28,7 @@ def handle_switch_request(controller_id, status_upper):
         logger.error(f"Controller {controller_id} IP not configured in environment")
         return False
     url = f"http://{ip}:80/valve/{STATUS_MAP[status_upper]}"
+    print(url)
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
