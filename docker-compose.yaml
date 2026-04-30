@@ -57,6 +57,8 @@ services:
       # - app_network
     environment:
       - TZ=Asia/Novosibirsk
+      - CONTROLLER_1_IP=${CONTROLLER_1_IP}
+      - CONTROLLER_2_IP=${CONTROLLER_2_IP}
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
 
