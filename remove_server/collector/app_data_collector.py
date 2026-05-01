@@ -33,10 +33,11 @@ class SensorReading(Base):
     __table_args__ = (UniqueConstraint('timestamp', 'sensor_id', name='uq_sensor_time'),)
     
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime(timezone=True), nullable=False)  # <-- timezone=True для aware-дат
+    timestamp = Column(DateTime(timezone=True), nullable=False)
     sensor_id = Column(Integer, nullable=False)
     temperature = Column(Float)
     humidity = Column(Float)
+    humidity_ratio = Column(Float)
     source_ip = Column(String(50))
     destination_ip = Column(String(50))
     puid = Column(String(20))
@@ -98,7 +99,8 @@ def receive_data():
             "humidity": float(data['humidity']) if data.get('humidity') is not None else None,
             "source_ip": str(data.get('source_ip')) if data.get('source_ip') is not None else None,
             "destination_ip": str(data.get('destination_ip')) if data.get('destination_ip') is not None else None,
-            "puid": puid if data.get('puid') is not None else None
+            "puid": puid if data.get('puid') is not None else None,
+            
         }
 
         stmt = insert(SensorReading).values(**values)
