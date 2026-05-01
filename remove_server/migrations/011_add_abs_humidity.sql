@@ -28,9 +28,3 @@ SET humidity_ratio = ROUND(
 WHERE temperature IS NOT NULL 
   AND humidity IS NOT NULL 
   AND humidity_ratio IS NULL;
-
--- 4. (Опционально) Добавляем CHECK-ограничение на разумный диапазон
--- Влагосодержание при 25–50°C и 10–80% RH обычно лежит в 2–80 г/кг
-ALTER TABLE sensor_readings 
-ADD CONSTRAINT chk_humidity_ratio_range 
-CHECK (humidity_ratio IS NULL OR (humidity_ratio >= 0 AND humidity_ratio <= 100));
