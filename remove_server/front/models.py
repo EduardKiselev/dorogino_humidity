@@ -14,6 +14,7 @@ class SensorReading(db.Model):
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
     puid = db.Column(db.String(64))
+    humidity_ratio = db.Column(db.Float)
     source_ip = db.Column(db.String(50))
     destination_ip = db.Column(db.String(50))
 
@@ -24,12 +25,13 @@ class SensorReading(db.Model):
             'sensor_id': self.sensor_id,
             'temperature': self.temperature,
             'humidity': self.humidity,
+            'humidity_ratio': self.humidity_ratio,
             'source_ip': self.source_ip,
             'destination_ip': self.destination_ip
         }
     
     def __repr__(self):
-        return f'<SensorReading sensor_id={self.sensor_id} time={self.timestamp.isoformat()} temp="{self.temperature}" hum={self.humidity}> puid={self.puid}'
+        return f'<SensorReading sensor_id={self.sensor_id} time={self.timestamp.isoformat()} temp={self.temperature} hum={self.humidity} abs_hum={self.humidity_ratio} puid={self.puid}>'
 class SensorLocation(db.Model):
     __tablename__ = 'sensor_locations'
     
