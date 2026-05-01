@@ -125,22 +125,25 @@ function buildChart(data, sensors, metrics) {
                 const metricName = metricLabels[metric] || metric; 
                 const yAxis = metric === 'temperature' ? 'yTemp' : metric === 'humidity_ratio' ? 'yRatio' : 'yHum';
 
-                    datasets.push({
-        label: `Д${sid} — ${metricName}`,
-         points,
-        borderColor: colors[(sid - 1) % colors.length],
-        tension: 0.2,
-        
-        pointRadius: metric === 'humidity' ? 2 : 0,
-        pointHoverRadius: metric === 'humidity' ? 4 : 0,
+                const isRatio = metric === 'humidity_ratio';
+                const isTemp = metric === 'temperature';
 
-        borderDash: isTemp ? [6, 4] : isRatio ? [3, 4] : [],
-        borderCapStyle: 'round',      
-        borderJoinStyle: 'round',    
-        borderWidth: 2, 
-        fill: false, 
-        yAxisID: yAxis 
-    });
+                datasets.push({
+                    label: `Д${sid} — ${metricName}`,
+                    points,
+                    borderColor: colors[(sid - 1) % colors.length],
+                    tension: 0.2,
+                    
+                    pointRadius: metric === 'humidity' ? 2 : 0,
+                    pointHoverRadius: metric === 'humidity' ? 4 : 0,
+
+                    borderDash: isTemp ? [6, 4] : isRatio ? [3, 4] : [],
+                    borderCapStyle: 'round',      
+                    borderJoinStyle: 'round',    
+                    borderWidth: 2, 
+                    fill: false, 
+                    yAxisID: yAxis 
+                });
             }
         });
     });
