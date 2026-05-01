@@ -223,13 +223,13 @@ function buildChart(data, sensors, metrics) {
                     yRatio: {
                         type: 'linear',
                         display: datasets.some(d => d.yAxisID === 'yRatio'),
-                        position: 'right',  // справа, чтобы не конфликтовать с % влажности
+                        position: 'left',
                         title: { display: true, text: 'Влагосодержание, г/кг' },
-                        min: 5, max: 20,    // ← как вы просили
+                        min: 5, max: 20,
                         ticks: { stepSize: 2.5 },
                         grid: {
-                            drawOnChartArea: false,  // не загромождать сетку
-                            color: 'rgba(147, 112, 219, 0.3)'  // фиолетовый для отличия
+                            drawOnChartArea: false,
+                            color: 'rgba(147, 112, 219, 0.3)' 
                         }
                     },
             },
