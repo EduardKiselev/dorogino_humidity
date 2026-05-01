@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
 from dotenv import load_dotenv
+import math
 
 load_dotenv()
 
@@ -63,6 +64,27 @@ def utc_to_gmt7(utc_dt: datetime) -> datetime:
         utc_dt = utc_dt.replace(tzinfo=timezone.utc)
     return utc_dt.astimezone(timezone(timedelta(hours=7)))
 
+def calculate_absolute_humidity(T, RH, pressure_kpa=99):
+    """
+    Влажность в г/кг сухого воздуха.
+    Формула Тетенса (Монтейт и Ансуорт, 2008).
+    T: температура, °C
+    RH: относительная влажность, %
+    pressure_kpa: атмосферное давление, кПа (по умолчанию 101.325)
+    """
+    if T is None or RH is None:
+        return None
+    try:
+        # Давление насыщения, кПа
+        e_s = 0.61078 * math.exp((17.27 * T) / (T + 237.3))
+        # Фактическое давление пара, кПа
+        e = e_s * RH / 100
+        # Массовое отношение, г/кг
+        w = 622 * e / (pressure_kpa - e)
+        return round(w, 2)
+    except:
+        return None
+
 # === ЭНДПОИНТЫ ===
 
 @app.route('/data', methods=['POST'])
@@ -95,6 +117,7 @@ def receive_data():
         values = {
             "timestamp": timestamp_utc,  # <-- Сохраняем в UTC (aware)
             "sensor_id": int(sensor_id),
+            "humidity_ratio": calculate_absolute_humidity(data['temperature'], data['humidity']),
             "temperature": float(data['temperature']) if data.get('temperature') is not None else None,
             "humidity": float(data['humidity']) if data.get('humidity') is not None else None,
             "source_ip": str(data.get('source_ip')) if data.get('source_ip') is not None else None,
