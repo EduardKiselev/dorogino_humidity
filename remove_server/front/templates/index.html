@@ -27,7 +27,7 @@
                 <td>
                     {% if reading.humidity is not none %}
                         <span class="badge {% if reading.humidity > 60 %}bg-danger
-                            {% elif reading.humidity > 45 %}bg-warning
+                            {% elif reading.humidity > 60 %}bg-warning
                             {% elif reading.humidity > 35 %}bg-success
                             {% elif reading.humidity > 20 %}bg-warning
                             {% else %}bg-danger{% endif %}">
