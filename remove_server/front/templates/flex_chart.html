@@ -130,7 +130,7 @@ function buildChart(data, sensors, metrics) {
 
                 datasets.push({
                     label: `Д${sid} — ${metricName}`,
-                    points,
+                    data: points,
                     borderColor: colors[(sid - 1) % colors.length],
                     tension: 0.2,
                     
