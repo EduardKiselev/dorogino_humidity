@@ -43,6 +43,10 @@
           <input class="form-check-input" type="checkbox" name="metrics" value="humidity" id="metHum" checked>
           <label class="form-check-label" for="metHum">Влажность</label>
         </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="metrics" value="humidity_ratio" id="metRatio">
+            <label class="form-check-label" for="metRatio">Влагосодержание (г/кг)</label>
+        </div>
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-primary">Построить</button>
@@ -94,6 +98,12 @@ function buildChart(data, sensors, metrics) {
     if (chart) chart.destroy();
     
     const datasets = [];
+
+    const metricLabels = {
+    'temperature': 'Температура',
+    'humidity': 'Влажность',
+    'humidity_ratio': 'Влагосодержание'
+    };
     
     sensors.forEach(sid => {
         const sensorData = data.filter(d => d.sensor_id == sid);
@@ -112,7 +122,8 @@ function buildChart(data, sensors, metrics) {
                 .filter(p => p !== null);
             
             if (points.length) {
-                const metricName = metric === 'temperature' ? 'Температура' : 'Влажность';
+                const metricName = metricLabels[metric] || metric; 
+                const yAxis = metric === 'temperature' ? 'yTemp' : metric === 'humidity_ratio' ? 'yRatio' : 'yHum';
                 datasets.push({
                     label: `Д${sid} — ${metricName}`,
                     data: points,
@@ -121,7 +132,8 @@ function buildChart(data, sensors, metrics) {
                     pointRadius: metric === 'temperature' ? 0 : 2,
                     pointHoverRadius: 4,
                     borderDash: metric === 'temperature' ? [6, 4] : [],
-                    yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
+                    // yAxisID: metric === 'temperature' ? 'yTemp' : 'yHum'
+                    yAxisID: yAxis 
                 });
             }
         });
@@ -208,6 +220,18 @@ function buildChart(data, sensors, metrics) {
                         drawOnChartArea: false
                     }
                 },
+                    yRatio: {
+                        type: 'linear',
+                        display: datasets.some(d => d.yAxisID === 'yRatio'),
+                        position: 'right',  // справа, чтобы не конфликтовать с % влажности
+                        title: { display: true, text: 'Влагосодержание, г/кг' },
+                        min: 5, max: 20,    // ← как вы просили
+                        ticks: { stepSize: 2.5 },
+                        grid: {
+                            drawOnChartArea: false,  // не загромождать сетку
+                            color: 'rgba(147, 112, 219, 0.3)'  // фиолетовый для отличия
+                        }
+                    },
             },
             
             plugins: {
@@ -377,10 +401,19 @@ document.getElementById('btnExport').onclick = async () => {
         
         if (!data.length) return alert('Нет данных');
         
-        const headers = ['timestamp', 'sensor_id', 'temperature', 'humidity'];
-        const csv = [headers.join(';'), ...data.map(d => 
-            [d.timestamp, d.sensor_id, d.temperature ?? '', d.humidity ?? ''].join(';')
-        )].join('\n');
+        const headers = ['timestamp', 'sensor_id', 'temperature', 'humidity', 'humidity_ratio'];
+        const csv = [
+            headers.join(';'),
+            ...data.map(d => 
+                [
+                    d.timestamp, 
+                    d.sensor_id, 
+                    d.temperature ?? '', 
+                    d.humidity ?? '', 
+                    d.humidity_ratio ?? ''
+                ].join(';')
+            )
+        ].join('\n'); 
         
         const blob = new Blob([csv], {type: 'text/plain'});
         const a = document.createElement('a');

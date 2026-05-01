@@ -102,27 +102,6 @@ def get_sensor_status():
     
     return sensors_status
 
-# def calculate_absolute_humidity(T, RH, pressure_kpa=99):
-#     """
-#     Влажность в г/кг сухого воздуха.
-#     Формула Тетенса (Монтейт и Ансуорт, 2008).
-#     T: температура, °C
-#     RH: относительная влажность, %
-#     pressure_kpa: атмосферное давление, кПа (по умолчанию 101.325)
-#     """
-#     if T is None or RH is None:
-#         return None
-#     try:
-#         # Давление насыщения, кПа
-#         e_s = 0.61078 * math.exp((17.27 * T) / (T + 237.3))
-#         # Фактическое давление пара, кПа
-#         e = e_s * RH / 100
-#         # Массовое отношение, г/кг
-#         w = 622 * e / (pressure_kpa - e)
-#         return round(w, 2)
-#     except:
-#         return None
-
 # === Роуты ===
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -158,11 +137,6 @@ def index():
         if reading.timestamp.tzinfo is None:
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
 
-        # reading.absolute_humidity = calculate_absolute_humidity(
-        #     reading.temperature, 
-        #     reading.humidity
-        # )
-    print(readings[:10])
     return render_template(
         'index.html', 
         readings=readings, 
@@ -383,22 +357,24 @@ def api_flex_chart_data():
         query = query.filter(SensorReading.sensor_id.in_(sensors))
     
     readings = query.order_by(SensorReading.timestamp).all()
-    app.logger.info(f"Found {len(readings)} readings for flex chart")
-    
 
-    
-    # Группируем: (sensor_id, timestamp_без_секунд) → список значений
-    aggregated = defaultdict(lambda: {'temperatures': [], 'humidities': []})
-    
+    aggregated = defaultdict(lambda: {
+        'temperatures': [], 
+        'humidities': [], 
+        'humidity_ratios': []  # 👈 новое
+    })
+
     for r in readings:
         ts_local = r.timestamp.astimezone(target_tz)
-        ts_normalized = ts_local.replace(second=0, microsecond=0) # Обрезаем секунды: 2026-04-07T12:34:56 → 2026-04-07T12:34:00
+        ts_normalized = ts_local.replace(second=0, microsecond=0)
         key = (r.sensor_id, ts_normalized)
         
         if r.temperature is not None:
             aggregated[key]['temperatures'].append(r.temperature)
         if r.humidity is not None:
             aggregated[key]['humidities'].append(r.humidity)
+        if r.humidity_ratio is not None:  # 👈 новое
+            aggregated[key]['humidity_ratios'].append(r.humidity_ratio)
     
     # Формируем ответ: усредняем значения внутри минуты
     data = []
@@ -411,6 +387,10 @@ def api_flex_chart_data():
             point['temperature'] = round(sum(values['temperatures']) / len(values['temperatures']), 1)
         if 'humidity' in metrics and values['humidities']:
             point['humidity'] = round(sum(values['humidities']) / len(values['humidities']), 1)
+        if 'humidity_ratio' in metrics and values['humidity_ratios']:
+            point['humidity_ratio'] = round(
+            sum(values['humidity_ratios']) / len(values['humidity_ratios']), 2)
+        
         data.append(point)
     
     # Сортируем по времени для корректного отображения
