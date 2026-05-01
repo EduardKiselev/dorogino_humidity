@@ -158,10 +158,10 @@ def index():
         if reading.timestamp.tzinfo is None:
             reading.timestamp = reading.timestamp.replace(tzinfo=timezone.utc)
 
-        reading.absolute_humidity = calculate_absolute_humidity(
-            reading.temperature, 
-            reading.humidity
-        )
+        # reading.absolute_humidity = calculate_absolute_humidity(
+        #     reading.temperature, 
+        #     reading.humidity
+        # )
     
     return render_template(
         'index.html', 

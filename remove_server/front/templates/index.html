@@ -43,8 +43,8 @@
                     {% else %}-{% endif %}
                 </td>
                 <td>
-                    {% if reading.absolute_humidity is not none %}
-                            {{ reading.absolute_humidity }}
+                    {% if reading.humidity_ratio is not none %}
+                            {{ reading.humidity_ratio }}
                     {% else %}-{% endif %}
                 </td>
                 <td>{{ reading.source_ip or '-' }}</td>
