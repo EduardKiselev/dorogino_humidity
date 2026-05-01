@@ -22,7 +22,7 @@ SET humidity_ratio = ROUND(
             (0.61078 * EXP((17.27 * temperature) / (temperature + 237.3))) * 
             (humidity / 100.0)
         )
-    ), 
+    )::NUMERIC, 
     2
 )
 WHERE temperature IS NOT NULL 
